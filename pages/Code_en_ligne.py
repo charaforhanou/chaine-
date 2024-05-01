@@ -81,7 +81,7 @@ class BinaryTransmissionApp:
         return np.abs(2/3*amp**2 * Ts * 0.01 * np.sinc(np.pi * f * Ts*0.001)**2)
 
     def plot(self):
-        filename = "/workspaces/chaine-/binary_sequence_and_period.txt"
+        filename = "binary_sequence_and_period.txt"
         try:
             with open(filename, 'r') as file:
                 lines = file.readlines()[1:]  # Skip the first line (header)
