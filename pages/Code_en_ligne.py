@@ -134,7 +134,7 @@ class BinaryTransmissionApp:
         plt.title(f'Filtered Binary Sequence ({self.filter_type})')
         plt.xlabel('Time (ms)')
         plt.ylabel('Amplitude')
-        if self.filter_type in ["Manchester", "Miller"]:
+        if self.filter_type in ["Manchester", "Miller" , "HDBN"]:
             plt.ylim(-2, 2)
         else:
             plt.ylim(-0.1, 1.1)
@@ -143,8 +143,8 @@ class BinaryTransmissionApp:
         st.pyplot()
 
         # Plot DSP for selected filter type
-        plt.figure(figsize=(10, 6))
-        freq_range = np.linspace(0.01, 10, 1000)  # Frequency range for DSP plot
+        plt.figure(figsize=(8, 6))
+        freq_range = np.linspace(-20, 20, 1000)  # Frequency range for DSP plot
         if self.filter_type == "RZ":
             plt.plot(freq_range, [self.DSP_RZ(1, period_ms, f) for f in freq_range])
             plt.title('DSP - RZ')

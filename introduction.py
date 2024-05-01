@@ -16,10 +16,7 @@ def run():
         ### Filtres communs :
         - **Filtre de réception** : Utilisé pour filtrer les signaux reçus et éliminer le bruit.
         - **Filtre d'émission** : Appliqué avant l'émission pour optimiser le signal à transmettre.
-        - **Filtre de démodulation** : Utilisé pour extraire l'information du signal modulé.
-        ### Plus d'informations :
-
-        """
+        - **Filtre de démodulation** : Utilisé pour extraire l'information du signal modulé.        """
     )
 
 if __name__ == "__main__":
