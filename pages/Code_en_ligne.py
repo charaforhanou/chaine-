@@ -137,7 +137,7 @@ class BinaryTransmissionApp:
         if self.filter_type in ["Manchester", "Miller" , "HDBN"]:
             plt.ylim(-2, 2)
         else:
-            plt.ylim(-0.1, 1.1)
+            plt.ylim(-1.1, 1.1)
 
         # Show plots
         st.pyplot()
