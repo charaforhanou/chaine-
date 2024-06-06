@@ -184,6 +184,7 @@ class BinaryTransmissionApp:
 
         # Show DSP plot
         st.pyplot(fig_dsp)
+        
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 app = BinaryTransmissionApp(st)  # Pass st to the constructor

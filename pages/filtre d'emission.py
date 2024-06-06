@@ -2,83 +2,90 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-def whitening_filter(N, cutoff_freq):
+def getsignal_ts():
+    filename = "binary_sequence_and_period.txt"
+    try:
+        with open(filename, 'r') as file:
+            lines = file.readlines()[1:]  # Skip the first line (header)
+            binary_sequence = []
+            periods = []
+            for line in lines:
+                try:
+                    value, period = line.split()
+                    binary_sequence.append(int(value))
+                    periods.append(float(period))
+                except ValueError:
+                    st.warning(f"Skipping line with invalid format: {line.strip()}")
+    except Exception as e:
+        st.error(f"An error occurred while reading the file: {e}")
+        return [], 0
+
+    if len(set(periods)) == 1:
+        return binary_sequence, periods[0]  # Return the sequence and the consistent period
+    else:
+        st.error("The periods in the file are not consistent.")
+        return [], 0
+
+signal, Ts = getsignal_ts()
+
+def filtre_blanch(signal, Ts, sampling_rate=1000):
     """
-    Compute the frequency response of a whitening filter.
-    
+    Apply the whitening filter to the input signal.
+
     Parameters:
-    N (int): Number of samples
-    cutoff_freq (float): Cutoff frequency of the whitening filter
-    
+    signal (list): Input signal
+    Ts (float): Period of the square wave (in milliseconds)
+    sampling_rate (int): Sampling rate in Hz (samples per second)
+
     Returns:
-    numpy.ndarray: Frequency response of the whitening filter
+    numpy.ndarray: Whitened signal
     """
-    # Create the frequency axis
-    f = np.linspace(0, 0.5, N//2+1)
-    
-    # Compute the frequency response
-    H = np.sqrt(f / cutoff_freq)
-    H[f > cutoff_freq] = 0
-    
-    return H
+    num_samples_per_period = int(Ts * sampling_rate / 1000)
+    whitened_signal = np.zeros(len(signal) * num_samples_per_period)
+    for i, bit in enumerate(signal):
+        if bit == 1:
+            whitened_signal[i * num_samples_per_period] = 1
+    return whitened_signal
 
-def plot_whitening_filter(N, cutoff_freq):
+def plot_whitened_signal(signal, Ts, sampling_rate=1000):
     """
-    Plot the frequency response of the whitening filter.
-    
+    Plot the whitened signal.
+
     Parameters:
-    N (int): Number of samples
-    cutoff_freq (float): Cutoff frequency of the whitening filter
+    signal (list): Input signal
+    Ts (float): Period of the square wave (in milliseconds)
+    sampling_rate (int): Sampling rate in Hz (samples per second)
     """
-    # Compute the frequency response
-    H = whitening_filter(N, cutoff_freq)
-    
+    # Apply the whitening filter
+    whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
+
+    # Calculate the total duration of the signal
+    total_duration_ms = len(whitened_signal) * (1000 / sampling_rate)
+
+    # Create the time axis with the same period as the binary sequence
+    t = np.linspace(0, total_duration_ms / 1000, len(whitened_signal))
+
     # Create the figure and axis
     fig, ax = plt.subplots(figsize=(8, 6))
-    
-    # Plot the frequency response
-    ax.stem(np.linspace(0, 0.5, N//2+1), np.abs(H))
-    ax.set_xlabel('Normalized Frequency')
-    ax.set_ylabel('Magnitude')
-    ax.set_title('Whitening Filter Frequency Response')
-    
-    # Display the plot in Streamlit
-    st.pyplot(fig)
 
-def plot_dsp(N, cutoff_freq):
-    """
-    Plot the discrete-time Fourier transform (DSP) of the whitening filter.
-    
-    Parameters:
-    N (int): Number of samples
-    cutoff_freq (float): Cutoff frequency of the whitening filter
-    """
-    # Compute the frequency response
-    H = whitening_filter(N, cutoff_freq)
-    
-    # Create the figure and axis
-    fig, ax = plt.subplots(figsize=(8, 6))
-    
-    # Plot the DSP
-    ax.plot(np.linspace(-0.5, 0.5, N), np.abs(np.fft.fft(H, N)))
-    ax.set_xlabel('Normalized Frequency')
-    ax.set_ylabel('Magnitude')
-    ax.set_title('Whitening Filter Discrete-Time Fourier Transform (DSP)')
-    
+    # Plot the whitened signal
+    ax.plot(t, whitened_signal, label='Whitened Signal', color='red')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Amplitude')
+    ax.set_title('Whitened Signal')
+    ax.legend()
+
     # Display the plot in Streamlit
     st.pyplot(fig)
 
 # Streamlit app
-st.title("Whitening Filter and DSP")
+st.title("Whitened Signal")
 
-# Get user input for the number of samples and cutoff frequency
-N = st.number_input("Number of Samples", min_value=100, max_value=10000, value=1000, step=100)
-cutoff_freq = st.slider("Cutoff Frequency", min_value=0.01, max_value=0.5, value=0.2, step=0.01)
+# If signal and Ts are not obtained from the file, provide input fields for them
+if not signal or not Ts:
+    signal = st.text_input("Enter Binary Sequence (comma-separated)", value="1,0,1,1,0")
+    Ts = st.number_input("Period of the Square Wave (ms)", min_value=1, value=100, step=1)
+    signal = [int(bit) for bit in signal.split(',')]
 
-# Plot the whitening filter frequency response
-st.subheader("Whitening Filter Frequency Response")
-plot_whitening_filter(int(N), cutoff_freq)
-
-# Plot the DSP
-st.subheader("Whitening Filter Discrete-Time Fourier Transform (DSP)")
-plot_dsp(int(N), cutoff_freq)
+# Plot the whitened signal
+plot_whitened_signal(signal, Ts)
