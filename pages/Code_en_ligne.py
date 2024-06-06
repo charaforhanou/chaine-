@@ -111,6 +111,7 @@ class BinaryTransmissionApp:
                     except ValueError:
                         st.warning(f"Skipping non-numeric value: {line.split()[0]}")
                 period_ms = float(lines[0].split()[1])
+
         except Exception as e:
             st.error("An error occurred while reading the file: {}".format(e))
             return
@@ -120,6 +121,11 @@ class BinaryTransmissionApp:
 
         # Create time array for binary sequence
         t = np.arange(0, len(binary_sequence) * period_ms, period_ms)
+        filename = f"filtered_signal_{self.filter_type}.txt"
+        np.savetxt(filename, filtered_sequence, fmt='%d', header=f"Filtered Signal ({self.filter_type})")
+
+        # Provide a link to download the saved file
+        st.markdown(f"Download the filtered signal for {self.filter_type}: [Filtered Signal]({filename})")
 
         # Plot original binary sequence
         fig, ax = plt.subplots(3, 1, figsize=(10, 6))

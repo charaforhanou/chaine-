@@ -1,5 +1,4 @@
 Binary Sequence   Period (ms)
-1 100.00
 0 100.00
 1 100.00
 0 100.00
@@ -12,5 +11,3 @@ Binary Sequence   Period (ms)
 1 100.00
 0 100.00
 0 100.00
-0 100.00
-1 100.00
