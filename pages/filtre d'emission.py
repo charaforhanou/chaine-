@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import welch
 
 def getsignal_ts():
     filename = "binary_sequence_and_period.txt"
@@ -26,20 +27,7 @@ def getsignal_ts():
         st.error("The periods in the file are not consistent.")
         return [], 0
 
-signal, Ts = getsignal_ts()
-
 def filtre_blanch(signal, Ts, sampling_rate=1000):
-    """
-    Apply the whitening filter to the input signal.
-
-    Parameters:
-    signal (list): Input signal
-    Ts (float): Period of the square wave (in milliseconds)
-    sampling_rate (int): Sampling rate in Hz (samples per second)
-
-    Returns:
-    numpy.ndarray: Whitened signal
-    """
     num_samples_per_period = int(Ts * sampling_rate / 1000)
     whitened_signal = np.zeros(len(signal) * num_samples_per_period)
     for i, bit in enumerate(signal):
@@ -47,45 +35,76 @@ def filtre_blanch(signal, Ts, sampling_rate=1000):
             whitened_signal[i * num_samples_per_period] = 1
     return whitened_signal
 
-def plot_whitened_signal(signal, Ts, sampling_rate=1000):
-    """
-    Plot the whitened signal.
+def filtre_RZ(signal, Ts, sampling_rate=1000):
+    num_samples_per_period = int(Ts * sampling_rate / 1000)
+    rz_signal = np.zeros(len(signal) * num_samples_per_period)
+    half_period = num_samples_per_period // 2
+    for i, bit in enumerate(signal):
+        if bit == 1:
+            rz_signal[i * num_samples_per_period:i * num_samples_per_period + half_period] = 1
+    return rz_signal
 
-    Parameters:
-    signal (list): Input signal
-    Ts (float): Period of the square wave (in milliseconds)
-    sampling_rate (int): Sampling rate in Hz (samples per second)
-    """
-    # Apply the whitening filter
+def filtre_nyquist(signal, Ts, sampling_rate=1000):
+    # Example Nyquist filter (Raised Cosine Filter)
+    from scipy.signal import firwin, lfilter
+    num_samples_per_period = int(Ts * sampling_rate / 1000)
+    roll_off = 0.25
+    num_taps = 101
+    nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off))
+    nyquist_signal = lfilter(nyquist_filter, 1.0, np.repeat(signal, num_samples_per_period))
+    return nyquist_signal
+
+def calculate_dsp(signal, sampling_rate=1000):
+    freqs, psd = welch(signal, fs=sampling_rate, nperseg=1024)
+    return freqs, psd
+
+def plot_signals(signal, Ts, sampling_rate=1000):
     whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
+    rz_signal = filtre_RZ(signal, Ts, sampling_rate)
+    nyquist_signal = filtre_nyquist(signal, Ts, sampling_rate)
+    freqs, psd = calculate_dsp(whitened_signal, sampling_rate)
 
-    # Calculate the total duration of the signal
     total_duration_ms = len(whitened_signal) * (1000 / sampling_rate)
-
-    # Create the time axis with the same period as the binary sequence
     t = np.linspace(0, total_duration_ms / 1000, len(whitened_signal))
 
-    # Create the figure and axis
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, axs = plt.subplots(4, 1, figsize=(10, 12))
 
-    # Plot the whitened signal
-    ax.plot(t, whitened_signal, label='Whitened Signal', color='red')
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Amplitude')
-    ax.set_title('Whitened Signal')
-    ax.legend()
+    axs[0].plot(t, whitened_signal, label='Whitened Signal', color='red')
+    axs[0].set_xlabel('Time (s)')
+    axs[0].set_ylabel('Amplitude')
+    axs[0].set_title('Whitened Signal')
+    axs[0].legend()
 
-    # Display the plot in Streamlit
+    axs[1].plot(t[:len(rz_signal)], rz_signal, label='RZ Signal', color='blue')
+    axs[1].set_xlabel('Time (s)')
+    axs[1].set_ylabel('Amplitude')
+    axs[1].set_title('RZ Signal')
+    axs[1].legend()
+
+    axs[2].plot(t[:len(nyquist_signal)], nyquist_signal, label='Nyquist Signal', color='green')
+    axs[2].set_xlabel('Time (s)')
+    axs[2].set_ylabel('Amplitude')
+    axs[2].set_title('Nyquist Signal')
+    axs[2].legend()
+
+    axs[3].semilogy(freqs, psd, label='Power Spectral Density', color='purple')
+    axs[3].set_xlabel('Frequency (Hz)')
+    axs[3].set_ylabel('Power/Frequency (dB/Hz)')
+    axs[3].set_title('Power Spectral Density')
+    axs[3].legend()
+
+    fig.tight_layout()
     st.pyplot(fig)
 
 # Streamlit app
-st.title("Whitened Signal")
+st.title("Signal Filters and DSP")
 
-# If signal and Ts are not obtained from the file, provide input fields for them
+signal, Ts = getsignal_ts()
+
 if not signal or not Ts:
     signal = st.text_input("Enter Binary Sequence (comma-separated)", value="1,0,1,1,0")
     Ts = st.number_input("Period of the Square Wave (ms)", min_value=1, value=100, step=1)
     signal = [int(bit) for bit in signal.split(',')]
 
-# Plot the whitened signal
-plot_whitened_signal(signal, Ts)
+# Plot the signals and DSP
+plot_signals(signal, Ts)

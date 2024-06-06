@@ -139,7 +139,7 @@ class BinaryTransmissionApp:
         t_clock = np.linspace(0, len(binary_sequence) * period_ms, num_clock_samples)
 
         # Plot clock signal
-        ax[1].plot(t_clock, clock_signal)
+        ax[1].step(t_clock, clock_signal, where='post')
         ax[1].set_title('Clock Signal')
         ax[1].set_xlabel('Time (ms)')
         ax[1].set_ylabel('Amplitude')

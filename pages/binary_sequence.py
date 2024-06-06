@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,19 +32,14 @@ class BinaryTransmissionApp:
         axs[0].set_ylim(-0.1, 1.1)
 
         # Create clock signal
-        clock_period_samples = int(1000 / self.period_ms)  # Number of samples per clock period
-        clock_signal = np.zeros(len(binary_sequence) * clock_period_samples)
-        clock_signal[::clock_period_samples] = 1  # Set clock pulses
-        t_clock = np.arange(0, len(clock_signal))
-
-        # Create rectangular clock signal
-        rect_width = int(clock_period_samples / 2)
-        rect_signal = np.zeros_like(clock_signal)
-        for i in range(0, len(clock_signal), clock_period_samples):
-            rect_signal[i:i + rect_width] = 1
+        clock_signal = np.zeros(len(t) * 2)  # Two samples per period for high and low
+        for i in range(len(binary_sequence)):
+            clock_signal[2 * i] = 1  # High part of the clock
+            clock_signal[2 * i + 1] = 0  # Low part of the clock
+        t_clock = np.arange(0, len(binary_sequence) * self.period_ms, self.period_ms / 2)
 
         # Create clock plot
-        axs[1].plot(t_clock, rect_signal)
+        axs[1].step(t_clock, clock_signal, where='post')
         axs[1].set_title('Clock Signal')
         axs[1].set_xlabel('Time (ms)')
         axs[1].set_ylabel('Amplitude')
