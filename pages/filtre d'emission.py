@@ -58,7 +58,6 @@ def calculate_dsp(signal, sampling_rate=1000):
     freqs, psd = welch(signal, fs=sampling_rate, nperseg=1024)
     return freqs, psd
 
-
 def plot_signals(signal, Ts, sampling_rate=1000):
     whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
     rz_signal = filtre_RZ(signal, Ts, sampling_rate)
@@ -99,12 +98,10 @@ def plot_signals(signal, Ts, sampling_rate=1000):
 
     # Save Nyquist signal to a file
     filename = "nyquist_signal.txt"
-    np.savetxt(filename, nyquist_signal, fmt='%d', header="Nyquist Signal")
+    np.savetxt(filename, nyquist_signal, fmt='%f', header="Nyquist Signal")
     st.markdown(f"Download Nyquist signal: [Nyquist Signal]({filename})")
 
 
-
-# Streamlit app
 st.title("Signal Filters and DSP")
 
 signal, Ts = getsignal_ts()
