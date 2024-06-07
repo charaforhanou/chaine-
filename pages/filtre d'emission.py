@@ -113,3 +113,7 @@ if not signal or not Ts:
 
 # Plot the signals and DSP
 plot_signals(signal, Ts)
+
+
+
+#hello 1412 nyquist signal mostly right good luck
