@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import welch
-
+st.set_option('deprecation.showPyplotGlobalUse', False)
 def getsignal_ts():
     filename = "binary_sequence_and_period.txt"
     try:

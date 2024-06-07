@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import welch
-
+st.set_option('deprecation.showPyplotGlobalUse', False)
 def plot_nyquist_signal(nyquist_signal, title="Nyquist Signal"):
     sampling_rate = 1000  # Assuming a sampling rate of 1000 Hz
     total_duration_ms = len(nyquist_signal) * (1000 / sampling_rate)
