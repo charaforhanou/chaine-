@@ -11,7 +11,7 @@ def plot_signal(signal, title="Signal"):
     t = np.linspace(0, total_duration_ms / 1000, len(signal))
 
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.plot(t, signal, label=title, color='blue')
+    ax.plot(t, signal, label=title)
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Amplitude')
     ax.set_title(title)
@@ -36,20 +36,23 @@ def main():
         st.subheader("Original Modulated Signal")
         plot_signal(modulated_signal, title="Original Modulated Signal")
 
-        # Add noise to the modulated signal with a fixed noise level of 0.1
-        noise_level = 0.1
+        # Adjust the noise level
+        noise_level = st.slider("Noise Level", 0.0, 1.0, 0.1, 0.01)
+
+        # Add noise to the modulated signal with the selected noise level
         noisy_signal = add_noise(modulated_signal, noise_level=noise_level)
 
         st.subheader("Noisy Modulated Signal")
-        plot_signal(noisy_signal, title="Noisy Modulated Signal")
+        plot_signal(noisy_signal, title=f"Noisy Modulated Signal (Noise Level: {noise_level})")
 
         # Save the noisy signal to a file
-        noisy_filename = "noisy_modulated_signal.txt"
-        np.savetxt(noisy_filename, noisy_signal, fmt='%f', header="Noisy Modulated Signal")
-       # st.markdown(f"Download Noisy Modulated Signal: [Noisy Modulated Signal]({noisy_filename})")
+        noisy_filename = f"noisy_modulated_signal_{noise_level:.2f}.txt"
+        np.savetxt(noisy_filename, noisy_signal, fmt='%f', header=f"Noisy Modulated Signal (Noise Level: {noise_level})")
+        #st.markdown(f"Download Noisy Modulated Signal: [Noisy Modulated Signal]({noisy_filename})")
     except Exception as e:
         st.error(f"An error occurred while reading the file: {e}")
 
 if __name__ == "__main__":
     main()
+
 #nyquist_with_nrz_and_addnoise
