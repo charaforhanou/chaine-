@@ -1,143 +1,193 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import welch
-st.set_option('deprecation.showPyplotGlobalUse', False)
-def apply_RZ(binary_sequence, Ts):
-    rz_sequence = []
-    for bit in binary_sequence:
-        if bit == 1:
-            rz_sequence.extend([1] * (Ts // 2) + [0] * (Ts // 2))
+
+class BinaryTransmissionApp:
+    def __init__(self, master):
+        self.master = master
+        master.title("Binary Transmission")
+
+        self.filter_type = st.selectbox("Select filter type:", ["RZ", "NRZ", "Miller", "Manchester", "HDBN"])
+        if self.filter_type == "HDBN":
+            self.hdbn_order = st.number_input("HDBN Filter Order", min_value=1, step=1, value=3)
         else:
-            rz_sequence.extend([0] * Ts)
-    return rz_sequence
+            self.hdbn_order = 3
 
-def apply_NRZ(binary_sequence, Ts):
-    nrz = [0]
-    for bit in binary_sequence:
-            nrz.extend([1, -1] if bit == 0 else [-1, 1])
-    return nrz
+        self.plot()
 
-def apply_Miller(binary_sequence, Ts):
-    miller_sequence = []
-    current_level = 1
-    for bit in binary_sequence:
-        if bit == 1:
-            current_level = -current_level
-            miller_sequence.extend([current_level] * (Ts // 2))
-            current_level = -current_level
-            miller_sequence.extend([current_level] * (Ts // 2))
+    def apply_filter(self, binary_sequence, filter_type, Ts):
+        if filter_type == "RZ":
+            return self.apply_RZ(binary_sequence)
+        elif filter_type == "NRZ":
+            return self.apply_NRZ(binary_sequence)
+        elif filter_type == "Miller":
+            return self.apply_Miller(binary_sequence, Ts)
+        elif filter_type == "Manchester":
+            return self.apply_Manchester(binary_sequence)
+        elif filter_type == "HDBN":
+            return self.apply_HDBN(binary_sequence)
         else:
-            miller_sequence.extend([current_level] * Ts)
-    return miller_sequence
+            return binary_sequence
 
-def apply_Manchester(binary_sequence, Ts):
-    manchester_sequence = []
-    for bit in binary_sequence:
-        manchester_sequence.extend([1, -1] if bit == 1 else [-1, 1])
-    return np.repeat(manchester_sequence, Ts // 2)
+    def apply_RZ(self, binary_sequence):
+        return np.repeat(binary_sequence, 2)
 
-def apply_HDBN(binary_sequence, Ts, order):
-    hdbn_sequence = []
-    zero_count = 0
-    previous_pulse = -1
+    def apply_NRZ(self, binary_sequence):
+        return np.repeat(binary_sequence, 2)
 
-    for bit in binary_sequence:
-        if bit == 0:
-            zero_count += 1
-            if zero_count == order:
-                hdbn_sequence.extend([0] * (Ts - 1) + [1])
-                zero_count = 0
+    def apply_Miller(self, binary_sequence, Ts):
+        miller_sequence = []
+        current_level = 1
+        for bit in binary_sequence:
+            if bit == 1:
+                current_level = -current_level
+                miller_sequence.extend([current_level] * (Ts // 2))
+                current_level = -current_level
+                miller_sequence.extend([current_level] * (Ts // 2))
             else:
-                hdbn_sequence.extend([0] * Ts)
+                miller_sequence.extend([current_level] * Ts)
+        return miller_sequence
+
+    def apply_Manchester(self, binary_sequence):
+        manchester_sequence = []
+        for bit in binary_sequence:
+            manchester_sequence.extend([1, -1] if bit == 0 else [-1, 1])
+        return manchester_sequence
+
+    def apply_HDBN(self, binary_sequence):
+        hdbn_sequence = []
+        consecutive_zeros = 0
+        violation = False
+        for bit in binary_sequence:
+            if bit == 0:
+                consecutive_zeros += 1
+                if consecutive_zeros == self.hdbn_order:
+                    hdbn_sequence.extend([0] * (self.hdbn_order - 1) + [1])
+                    violation = not violation
+                    consecutive_zeros = 0
+                else:
+                    hdbn_sequence.append(0)
+            else:
+                hdbn_sequence.append(1 if violation else -1)
+                violation = not violation
+                consecutive_zeros = 0
+        return hdbn_sequence
+
+    @staticmethod
+    def DSP_NRZ(amp, Ts, f):
+        return amp**2 * Ts * 0.001 * np.sinc(np.pi * f * Ts * 0.001)**2
+
+    @staticmethod
+    def DSP_RZ(amp, Ts, f):
+        return amp**2 * Ts * 0.001 / 4 * np.sinc(np.pi * f * Ts * 0.001 / 2)**2
+
+    @staticmethod
+    def DSP_Miller(amp, Ts, f):
+        return amp**2 * Ts * 10000 / 4 * 1 / (2 * (np.pi * f * Ts)**2 * (17 + 8 * np.cos(2 * np.pi * f * Ts * 0.001))) * (
+            23 - 2 * np.cos(np.pi * f * Ts * 0.001) - 22 * np.cos(2 * np.pi * f * Ts * 0.001) - 12 * np.cos(3 * np.pi * f * Ts * 0.001) +
+            5 * np.cos(4 * np.pi * f * Ts * 0.001) + 12 * np.cos(5 * np.pi * f * Ts * 0.001) + 2 * np.cos(6 * np.pi * f * Ts * 0.001) -
+            8 * np.cos(7 * np.pi * f * Ts * 0.001) + 2 * np.cos(8 * np.pi * f * Ts * 0.001))
+
+    @staticmethod
+    def DSP_Manchester(amp, Ts, f):
+        return np.abs(amp**2 * Ts * 0.66 * 0.01 * np.sinc(np.pi * f * Ts * 0.001 / 2)**2 * np.sin(np.pi * f * Ts * 0.001 / 2)**2)
+
+    @staticmethod
+    def DSP_HDBN(amp, Ts, f, order):
+        return np.abs(2 / 3 * amp**2 * Ts * 0.01 * np.sinc(np.pi * f * Ts * 0.001)**2)
+
+    def plot(self):
+        filename = "/workspaces/chaine-/binary_sequence_and_period.txt"
+        try:
+            with open(filename, 'r') as file:
+                lines = file.readlines()[1:]  # Skip the first line (header)
+                binary_sequence = []
+                period_ms = float(lines[0].split()[1])
+                for line in lines:
+                    try:
+                        binary_sequence.append(int(line.split()[0]))
+                    except ValueError:
+                        st.warning(f"Skipping non-numeric value: {line.split()[0]}")
+        except Exception as e:
+            st.error("An error occurred while reading the file: {}".format(e))
+            return
+
+        # Apply selected filter
+        Ts = int(1000 / period_ms)  # Assuming period_ms is in milliseconds
+        filtered_sequence = self.apply_filter(binary_sequence, self.filter_type, Ts)
+
+        # Create time array for binary sequence
+        t = np.arange(0, len(binary_sequence) * period_ms, period_ms)
+
+        # Plot original binary sequence
+        plt.figure(figsize=(10, 6))
+        plt.subplot(3, 1, 1)
+        plt.step(t, binary_sequence, where='post')
+        plt.title('Binary Sequence')
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Amplitude')
+        plt.ylim(-0.1, 1.1)
+
+        # Create clock signal
+        clock_period_samples = int(1000 / period_ms)  # Number of samples per clock period
+        num_clock_samples = len(binary_sequence) * clock_period_samples
+        clock_signal = np.zeros(num_clock_samples)
+        for i in range(0, num_clock_samples, clock_period_samples):
+            clock_signal[i:i + int(clock_period_samples / 2)] = 1
+        t_clock = np.linspace(0, len(binary_sequence) * period_ms, num_clock_samples)
+
+        # Plot clock signal
+        plt.subplot(3, 1, 2)
+        plt.plot(t_clock, clock_signal)
+        plt.title('Clock Signal')
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Amplitude')
+        plt.ylim(-0.1, 1.1)
+
+        # Plot filtered sequence
+        t_filtered = np.linspace(0, len(binary_sequence) * period_ms, len(filtered_sequence))
+        plt.subplot(3, 1, 3)
+        plt.step(t_filtered, filtered_sequence, where='post')
+        plt.title(f'Filtered Binary Sequence ({self.filter_type})')
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Amplitude')
+        if self.filter_type in ["Manchester", "Miller","NRZ","HDBN"]:
+            plt.ylim(-2, 2)
         else:
-            if zero_count >= order:
-                zero_count = 0
-            previous_pulse = -previous_pulse
-            hdbn_sequence.extend([previous_pulse] * Ts)
-    return hdbn_sequence
+            plt.ylim(-0.1, 1.1)
 
-# def plot_signal(signal, title, period_ms):
-#     t = np.linspace(0, len(signal) * period_ms / len(signal), len(signal))
-#     plt.figure(figsize=(10, 4))
-#     plt.plot(t, signal)
-#     plt.title(title)
-#     plt.xlabel('Time (ms)')
-#     plt.ylabel('Amplitude')
-#     plt.xlim(0, 1000)  # Set x-axis limit from 0 to 1000 ms
-#     plt.grid(True)
-#     st.pyplot()
+        # Show plots
+        st.pyplot()
 
-def plot_signal(signal, title, period_ms):
-    t = np.linspace(0, len(signal) * period_ms / len(signal), len(signal) + 1)  # Add one extra point for step plot
-    plt.figure(figsize=(10, 4))
-    plt.step(t, np.hstack((signal, signal[-1])), where='post')  # Use step plot
-    plt.title(title)
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Amplitude')
-    plt.xlim(0, 1000)  # Set x-axis limit from 0 to 1000 ms
-    plt.grid(True)
-    st.pyplot()
+        # Plot DSP for selected filter type
+        plt.figure(figsize=(10, 6))
+        freq_range = np.linspace(-10, 10, 1000)  # Frequency range for DSP plot
+        if self.filter_type == "RZ":
+            plt.plot(freq_range, [self.DSP_RZ(1, period_ms, f) for f in freq_range])
+            plt.title('DSP - RZ')
+        elif self.filter_type == "NRZ":
+            plt.plot(freq_range, [self.DSP_NRZ(1, period_ms, f) for f in freq_range])
+            plt.title('DSP - NRZ')
+            plt.ylim(0, 1.2)
+        elif self.filter_type == "Miller":
+            plt.plot(freq_range, [self.DSP_Miller(1, period_ms, f) for f in freq_range])
+            plt.title('DSP - Miller')
+            plt.ylim(0, 1.2)
+        elif self.filter_type == "Manchester":
+            plt.plot(freq_range, [self.DSP_Manchester(1, period_ms, f) for f in freq_range])
+            plt.title('DSP - Manchester')
+            plt.ylim(0, 1.2)
+        elif self.filter_type == "HDBN":
+            plt.plot(freq_range, [self.DSP_HDBN(1, period_ms, f, self.hdbn_order) for f in freq_range])
+            plt.title(f'DSP - HDBN (Order: {self.hdbn_order})')
+            plt.ylim(0, 1.5)
 
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Magnitude')
+        plt.grid(True)
 
+        # Show DSP plot
+        st.pyplot()
 
-def plot_dsp(signal, fs):
-    freqs, psd = welch(signal, fs, nperseg=1024)
-    plt.figure(figsize=(10, 4))
-    plt.semilogy(freqs, psd)
-    plt.title('Power Spectral Density')
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Power/Frequency (dB/Hz)')
-    plt.grid(True)
-    st.pyplot()
-
-st.title("Binary Transmission with Filters")
-
-filter_type = st.selectbox("Select filter type:", ["RZ", "NRZ", "Miller", "Manchester", "HDBN"])
-
-if filter_type == "HDBN":
-    hdbn_order = st.number_input("HDBN Filter Order", min_value=1, step=1, value=3)
-else:
-    hdbn_order = 3
-
-filename = "binary_sequence_and_period.txt"
-try:
-    with open(filename, 'r') as file:
-        lines = file.readlines()[1:]  # Skip the first line (header)
-        binary_sequence = []
-        for line in lines:
-            try:
-                binary_sequence.append(int(line.split()[0]))
-            except ValueError:
-                st.warning(f"Skipping non-numeric value: {line.split()[0]}")
-        period_ms = float(lines[0].split()[1])
-except Exception as e:
-    st.error("An error occurred while reading the file: {}".format(e))
-    binary_sequence = [1, 0, 1, 1, 0]
-    period_ms = 100
-
-fs = 1000  # Sampling rate in Hz
-Ts = int(fs * period_ms / 1000)  # Period in samples
-
-if filter_type == "RZ":
-    filtered_sequence = apply_RZ(binary_sequence, Ts)
-elif filter_type == "NRZ":
-    filtered_sequence = apply_NRZ(binary_sequence, Ts)
-elif filter_type == "Miller":
-    filtered_sequence = apply_Miller(binary_sequence, Ts)
-elif filter_type == "Manchester":
-    filtered_sequence = apply_Manchester(binary_sequence, Ts)
-elif filter_type == "HDBN":
-    filtered_sequence = apply_HDBN(binary_sequence, Ts, hdbn_order)
-
-# Assemble the binary sequence into a single string
-binary_sequence_str = ''.join(map(str, binary_sequence))
-
-# Display the original binary sequence
-st.write("Original Binary Sequence:", binary_sequence_str)
-
-# Plot original binary sequence
-plot_signal(binary_sequence, 'Original Binary Sequence', 1000)
-
-# Plot filtered sequence
-plot_signal(filtered_sequence, f'Filtered Sequence ({filter_type})', 1000)
+st.set_option('deprecation.showPyplotGlobalUse', False)
+app = BinaryTransmissionApp(st)  # Pass st to the constructor
