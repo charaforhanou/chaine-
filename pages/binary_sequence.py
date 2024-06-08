@@ -28,7 +28,7 @@ class BinaryTransmissionApp:
         st.session_state.binary_sequence = ''.join(np.random.choice(['0', '1'], size=sequence_length))
         st.text(f"Generated binary sequence: {st.session_state.binary_sequence}")
 
-        periods = [100, 200, 300, 400, 500, 600]
+        periods = [50,10,15,20,25,30,35,40,60,70]
         st.session_state.period_ms = np.random.choice(periods)
         st.text(f"Selected period: {st.session_state.period_ms} ms")
 
