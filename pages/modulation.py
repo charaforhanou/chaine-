@@ -2,7 +2,9 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import welch
+
 st.set_option('deprecation.showPyplotGlobalUse', False)
+
 def plot_nyquist_signal(nyquist_signal, title="Nyquist Signal"):
     sampling_rate = 1000  # Assuming a sampling rate of 1000 Hz
     total_duration_ms = len(nyquist_signal) * (1000 / sampling_rate)
@@ -66,6 +68,10 @@ def main():
             st.subheader(f"{modulation_type} Modulated Signal")
             plot_nyquist_signal(modulated_signal, title=f"{modulation_type} Modulated Signal")
 
+            # Save the modulated signal to a file
+            modulated_filename = f"modulated_signal_{modulation_type}.txt"
+            np.savetxt(modulated_filename, modulated_signal, fmt='%f', header=f"{modulation_type} Modulated Signal")
+
             freqs, psd = calculate_dsp(modulated_signal)
 
             st.subheader(f"{modulation_type} Modulated Signal Power Spectral Density")
@@ -75,3 +81,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# saveed data 
