@@ -113,3 +113,6 @@ if not signal or not Ts:
 
 # Plot the signals and DSP
 plot_signals(signal, Ts)
+
+
+#with RZ
