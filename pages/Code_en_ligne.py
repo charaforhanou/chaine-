@@ -17,7 +17,7 @@ class BinaryTransmissionApp:
 
     def apply_filter(self, binary_sequence, Ts, filter_type):
         if filter_type == "RZ":
-            return self.apply_RZ(binary_sequence)
+            return self.apply_RZ(binary_sequence,Ts)
         elif filter_type == "NRZ":
             return self.filtre_NRZ(binary_sequence, Ts)
         elif filter_type == "Miller":
@@ -29,15 +29,22 @@ class BinaryTransmissionApp:
         else:
             return binary_sequence
 
-    def apply_RZ(self, binary_sequence):
-        rz_sequence = []
-        for bit in binary_sequence:
-            if bit == 1:
-                rz_sequence.extend([1, 0])
-            else:
-                rz_sequence.extend([0, 0])
-        return rz_sequence
-
+    # def apply_RZ(self, binary_sequence):
+    #     rz_sequence = []
+    #     for bit in binary_sequence:
+    #         if bit == 1:
+    #             rz_sequence.extend([1, 0])
+    #         else:
+    #             rz_sequence.extend([0, 0])
+    #     return rz_sequence
+    def apply_RZ(self, signal ,Ts):
+        sampling_rate = 1000
+        num_samples_per_period = int(Ts * sampling_rate / 1000)
+        nrz_signal = np.zeros(len(signal) * num_samples_per_period)
+        for i, bit in enumerate(signal):
+            value = 1 if bit == 1 else 0
+            nrz_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = value
+        return nrz_signal
     def filtre_NRZ(self, signal, Ts):
         sampling_rate = 1000
         num_samples_per_period = int(Ts * sampling_rate / 1000)

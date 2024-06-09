@@ -36,16 +36,15 @@ def estimate_period(demodulated_binary_signal, sampling_rate=1000):
     # Calculate time differences between consecutive transitions
     if len(transitions_indices) > 1:
         time_diffs = np.diff(transitions_indices) / sampling_rate
-        # Take the average time difference as the estimated period
-        estimated_period = np.mean(time_diffs)
+        # Take the median time difference as the estimated period
+        estimated_period = np.median(time_diffs)
     else:
         estimated_period = np.nan  # Not enough transitions to estimate period
     
     return estimated_period
 
-def decode_binary_sequence(demodulated_signal, sampling_rate=1000):
+def decode_binary_sequence(demodulated_signal, estimated_period, sampling_rate=1000):
     # Determine the bit duration based on the estimated period
-    estimated_period = estimate_period(demodulated_signal, sampling_rate)
     bit_duration = int(estimated_period * sampling_rate)
     
     # Decode the binary sequence
@@ -80,8 +79,12 @@ def main():
         st.subheader("Demodulated Signal Saved")
         st.write(f"Demodulated signal has been saved to {demodulated_filename}")
 
+        # Estimate the period of the signal
+        estimated_period = estimate_period(demodulated_signal)
+        st.write(f"Estimated Period: {estimated_period:.4f} seconds")
+
         # Decode the binary sequence
-        binary_sequence = decode_binary_sequence(demodulated_signal)
+        binary_sequence = decode_binary_sequence(demodulated_signal, estimated_period)
         st.subheader("Detected Binary Sequence")
         st.write("".join(map(str, binary_sequence)))
 

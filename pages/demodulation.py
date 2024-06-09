@@ -70,7 +70,7 @@ def main():
         estimated_period = estimate_period(demodulated_signal)
         st.subheader("Estimated Period")
         if not np.isnan(estimated_period):
-            st.write("Estimated Period:", 2.5*1000*estimated_period, "ms")
+            st.write("Estimated Period:", 1000*estimated_period, "ms")
         else:
             st.write("Not enough transitions to estimate the period.")
     except Exception as e:
