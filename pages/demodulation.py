@@ -20,32 +20,26 @@ def plot_signal(signal, title="Signal"):
 
     st.pyplot(fig)
 
-def demodulate_ask_with_both_transitions(modulated_signal, threshold=0.1):
-    # Demodulate using cosine squared demodulation
-    demodulated_signal = np.square(modulated_signal)
-
-    # Find both positive and negative transitions
-    positive_transitions, _ = find_peaks(demodulated_signal, height=threshold)
-    negative_transitions, _ = find_peaks(-demodulated_signal, height=threshold)
-
-    # Initialize demodulated binary signal
-    demodulated_binary_signal = np.zeros_like(demodulated_signal)
-
-    # Mark positive transitions as '1' and negative transitions as '-1'
-    demodulated_binary_signal[positive_transitions] = 1
-    demodulated_binary_signal[negative_transitions] = -1
-
+def demodulate_ask(modulated_signal, threshold=0.1):
+    # Demodulate using envelope detection
+    demodulated_signal = np.abs(modulated_signal)
+    
+    # Binarize the signal based on the threshold
+    demodulated_binary_signal = np.where(demodulated_signal > threshold, 1, 0)
+    
     return demodulated_binary_signal
 
 def estimate_period(demodulated_binary_signal, sampling_rate=1000):
     # Find indices of transitions
-    transitions_indices = np.where(np.abs(np.diff(demodulated_binary_signal)) > 0)[0]
-
+    transitions_indices = np.where(np.diff(demodulated_binary_signal) != 0)[0]
+    
     # Calculate time differences between consecutive transitions
-    time_diffs = np.diff(transitions_indices) / sampling_rate
-
-    # Take the average time difference as the estimated period
-    estimated_period = np.mean(time_diffs)
+    if len(transitions_indices) > 1:
+        time_diffs = np.diff(transitions_indices) / sampling_rate
+        # Take the average time difference as the estimated period
+        estimated_period = np.mean(time_diffs)
+    else:
+        estimated_period = np.nan  # Not enough transitions to estimate period
     
     return estimated_period
 
@@ -54,6 +48,7 @@ def main():
 
     # File name for the modulated signal
     filename = "modulated_signal_ASK.txt"
+    # filename = "modulated_signal_FSK.txt"
 
     try:
         modulated_signal = np.loadtxt(filename)
@@ -61,14 +56,23 @@ def main():
         plot_signal(modulated_signal, title="Original Modulated Signal")
 
         # Demodulate the ASK modulated signal
-        demodulated_signal = demodulate_ask_with_both_transitions(modulated_signal)
+        demodulated_signal = demodulate_ask(modulated_signal)
         st.subheader("Demodulated Binary Signal")
         plot_signal(demodulated_signal, title="Demodulated Binary Signal")
+
+        # Save the demodulated signal to a file
+        demodulated_filename = "demodulated_signal.txt"
+        np.savetxt(demodulated_filename, demodulated_signal)
+        st.subheader("Demodulated Signal Saved")
+       # st.write(f"Demodulated signal has been saved to {demodulated_filename}")
 
         # Estimate the period
         estimated_period = estimate_period(demodulated_signal)
         st.subheader("Estimated Period")
-        st.write("Estimated Period:", 1000*estimated_period, "ms")
+        if not np.isnan(estimated_period):
+            st.write("Estimated Period:", 2.5*1000*estimated_period, "ms")
+        else:
+            st.write("Not enough transitions to estimate the period.")
     except Exception as e:
         st.error(f"An error occurred while reading the file: {e}")
 

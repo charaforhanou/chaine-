@@ -15,11 +15,11 @@ class BinaryTransmissionApp:
 
         self.plot()
 
-    def apply_filter(self, binary_sequence, filter_type):
+    def apply_filter(self, binary_sequence, Ts, filter_type):
         if filter_type == "RZ":
             return self.apply_RZ(binary_sequence)
         elif filter_type == "NRZ":
-            return self.apply_NRZ(binary_sequence)
+            return self.filtre_NRZ(binary_sequence, Ts)
         elif filter_type == "Miller":
             return self.apply_Miller(binary_sequence)
         elif filter_type == "Manchester":
@@ -38,11 +38,14 @@ class BinaryTransmissionApp:
                 rz_sequence.extend([0, 0])
         return rz_sequence
 
-    def apply_NRZ(self, binary_sequence):
-        nrz = []
-        for bit in binary_sequence:
-            nrz.extend([1, -1] if bit == 0 else [-1, 1])
-        return nrz
+    def filtre_NRZ(self, signal, Ts):
+        sampling_rate = 1000
+        num_samples_per_period = int(Ts * sampling_rate / 1000)
+        nrz_signal = np.zeros(len(signal) * num_samples_per_period)
+        for i, bit in enumerate(signal):
+            value = 1 if bit == 1 else -1
+            nrz_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = value
+        return nrz_signal
 
     def apply_Miller(self, binary_sequence):
         miller_sequence = []
@@ -57,7 +60,6 @@ class BinaryTransmissionApp:
                 miller_sequence.extend([-1, 1])  # Transition in the middle of the bit
             prev_bit = bit
         return miller_sequence
-
 
     def apply_Manchester(self, binary_sequence):
         manchester_sequence = []
@@ -115,8 +117,10 @@ class BinaryTransmissionApp:
             st.error("An error occurred while reading the file: {}".format(e))
             return
 
+        Ts = period_ms  # Define Ts based on the period in milliseconds
+
         # Apply selected filter
-        filtered_sequence = self.apply_filter(binary_sequence, self.filter_type)
+        filtered_sequence = self.apply_filter(binary_sequence, Ts, self.filter_type)
 
         # Create time array for binary sequence
         t = np.arange(0, len(binary_sequence) * period_ms, period_ms)
@@ -151,7 +155,7 @@ class BinaryTransmissionApp:
         ax[2].set_title(f'Filtered Binary Sequence ({self.filter_type})')
         ax[2].set_xlabel('Time (ms)')
         ax[2].set_ylabel('Amplitude')
-        if self.filter_type in ["Manchester", "Miller","NRZ", "HDBN"]:
+        if self.filter_type in ["Manchester", "Miller", "NRZ", "HDBN"]:
             ax[2].set_ylim(-2, 2)
         else:
             ax[2].set_ylim(-0.1, 1.1)
@@ -184,7 +188,7 @@ class BinaryTransmissionApp:
 
         # Show DSP plot
         st.pyplot(fig_dsp)
-        
+
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 app = BinaryTransmissionApp(st)  # Pass st to the constructor
