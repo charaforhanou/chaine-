@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
@@ -20,32 +19,15 @@ def plot_signal(signal, title="Signal"):
 
     st.pyplot(fig)
 
-def demodulate_ask(modulated_signal, threshold=0.1):
+def demodulate_ask(modulated_signal):
     # Demodulate using envelope detection
     demodulated_signal = np.abs(modulated_signal)
     
-    # Binarize the signal based on the threshold
-    demodulated_binary_signal = np.where(demodulated_signal > threshold, 1, 0)
-    
-    return demodulated_binary_signal
+    return demodulated_signal
 
-def estimate_period(demodulated_binary_signal, sampling_rate=1000):
-    # Find indices of transitions
-    transitions_indices = np.where(np.diff(demodulated_binary_signal) != 0)[0]
-    
-    # Calculate time differences between consecutive transitions
-    if len(transitions_indices) > 1:
-        time_diffs = np.diff(transitions_indices) / sampling_rate
-        # Take the median time difference as the estimated period
-        estimated_period = np.median(time_diffs)
-    else:
-        estimated_period = np.nan  # Not enough transitions to estimate period
-    
-    return estimated_period
-
-def decode_binary_sequence(demodulated_signal, estimated_period, sampling_rate=1000):
-    # Determine the bit duration based on the estimated period
-    bit_duration = int(estimated_period * sampling_rate)
+def decode_binary_sequence(demodulated_signal, fixed_period, sampling_rate=1000):
+    # Determine the bit duration based on the fixed period
+    bit_duration = int(fixed_period * sampling_rate)
     
     # Decode the binary sequence
     binary_sequence = []
@@ -71,20 +53,25 @@ def main():
 
         # Demodulate the ASK modulated signal
         demodulated_signal = demodulate_ask(modulated_signal)
+        st.subheader("Demodulated Signal (Envelope Detected)")
+        plot_signal(demodulated_signal, title="Demodulated Signal")
+
+        # Binarize the demodulated signal based on the threshold (for visualization)
+        threshold = 0.1
+        demodulated_binary_signal = np.where(demodulated_signal > threshold, 1, 0)
         st.subheader("Demodulated Binary Signal")
-        plot_signal(demodulated_signal, title="Demodulated Binary Signal")
+        plot_signal(demodulated_binary_signal, title="Demodulated Binary Signal")
 
         # Save the demodulated signal to a file
         np.savetxt(demodulated_filename, demodulated_signal)
         st.subheader("Demodulated Signal Saved")
         st.write(f"Demodulated signal has been saved to {demodulated_filename}")
 
-        # Estimate the period of the signal
-        estimated_period = estimate_period(demodulated_signal)
-        st.write(f"Estimated Period: {estimated_period:.4f} seconds")
+        # Set the fixed period to 100 ms
+        fixed_period = 0.1  # in seconds
 
-        # Decode the binary sequence
-        binary_sequence = decode_binary_sequence(demodulated_signal, estimated_period)
+        # Decode the binary sequence using the fixed period
+        binary_sequence = decode_binary_sequence(demodulated_binary_signal, fixed_period)
         st.subheader("Detected Binary Sequence")
         st.write("".join(map(str, binary_sequence)))
 

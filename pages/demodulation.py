@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
@@ -20,35 +19,31 @@ def plot_signal(signal, title="Signal"):
 
     st.pyplot(fig)
 
-def demodulate_ask(modulated_signal, threshold=0.1):
-    # Demodulate using envelope detection
-    demodulated_signal = np.abs(modulated_signal)
+def demodulate_ask(modulated_signal, threshold=0):
+    # Demodulate by detecting positive and negative values
+    demodulated_signal = np.where(modulated_signal >= threshold, 1, 0)
     
-    # Binarize the signal based on the threshold
-    demodulated_binary_signal = np.where(demodulated_signal > threshold, 1, 0)
-    
-    return demodulated_binary_signal
+    return demodulated_signal
 
-def estimate_period(demodulated_binary_signal, sampling_rate=1000):
-    # Find indices of transitions
-    transitions_indices = np.where(np.diff(demodulated_binary_signal) != 0)[0]
+def decode_binary_sequence(demodulated_signal, fixed_period, sampling_rate=1000):
+    # Determine the bit duration based on the fixed period
+    bit_duration = int(fixed_period * sampling_rate)
     
-    # Calculate time differences between consecutive transitions
-    if len(transitions_indices) > 1:
-        time_diffs = np.diff(transitions_indices) / sampling_rate
-        # Take the average time difference as the estimated period
-        estimated_period = np.mean(time_diffs)
-    else:
-        estimated_period = np.nan  # Not enough transitions to estimate period
+    # Decode the binary sequence
+    binary_sequence = []
+    for i in range(0, len(demodulated_signal), bit_duration):
+        bit_segment = demodulated_signal[i:i+bit_duration]
+        # Determine the value of the bit (majority rule)
+        bit_value = 1 if np.mean(bit_segment) > 0.5 else 0
+        binary_sequence.append(bit_value)
     
-    return estimated_period
+    return binary_sequence
 
 def main():
     st.title("Demodulate ASK Modulated Signal")
 
     # File name for the modulated signal
     filename = "modulated_signal_ASK.txt"
-    # filename = "modulated_signal_FSK.txt"
 
     try:
         modulated_signal = np.loadtxt(filename)
@@ -64,15 +59,16 @@ def main():
         demodulated_filename = "demodulated_signal.txt"
         np.savetxt(demodulated_filename, demodulated_signal)
         st.subheader("Demodulated Signal Saved")
-       # st.write(f"Demodulated signal has been saved to {demodulated_filename}")
+        st.write(f"Demodulated signal has been saved to {demodulated_filename}")
 
-        # Estimate the period
-        estimated_period = estimate_period(demodulated_signal)
-        st.subheader("Estimated Period")
-        if not np.isnan(estimated_period):
-            st.write("Estimated Period:", 1000*estimated_period, "ms")
-        else:
-            st.write("Not enough transitions to estimate the period.")
+        # Set the fixed period to 100 ms
+        fixed_period = 0.1  # in seconds
+
+        # Decode the binary sequence using the fixed period
+        binary_sequence = decode_binary_sequence(demodulated_signal, fixed_period)
+        st.subheader("Detected Binary Sequence")
+        st.write("".join(map(str, binary_sequence)))
+
     except Exception as e:
         st.error(f"An error occurred while reading the file: {e}")
 
