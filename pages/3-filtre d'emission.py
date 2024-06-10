@@ -33,6 +33,8 @@ def filtre_blanch(signal, Ts, sampling_rate=1000):
     for i, bit in enumerate(signal):
         if bit == 1:
             whitened_signal[i * num_samples_per_period] = 1
+        else:
+             whitened_signal[i * num_samples_per_period] = -1
     return whitened_signal
 
 def filtre_NRZ(signal, Ts, sampling_rate=1000):
@@ -60,6 +62,8 @@ def plot_signals(signal, Ts, sampling_rate=1000):
     whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
     nrz_signal = filtre_NRZ(signal, Ts, sampling_rate)
     nyquist_signal = filtre_nyquist(nrz_signal, Ts, sampling_rate)
+     #nyquist_signal = filtre_nyquist(whitened_signal, Ts, sampling_rate)
+
     freqs, psd = calculate_dsp(whitened_signal, sampling_rate)
     
     total_duration_ms = len(nyquist_signal) * (1000 / sampling_rate)

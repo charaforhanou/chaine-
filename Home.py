@@ -10,29 +10,9 @@ def run():
 
     # Sidebar on the left side
     absolute_path = os.path.join(os.path.dirname(__file__), "OIP.jpg")
-    st.sidebar.image(absolute_path, use_column_width=True)
+    #st.sidebar.image(absolute_path, use_column_width=True)
 
-
-    # # Custom sidebar on the right side
-    # st.markdown(
-    #     """
-    #     <div style="position: fixed; right: 0; top: 0; width: 200px; background-color: #f8f9fa; padding: 20px;">
-    #     <h2 style="text-align: center;">Custom Sidebar</h2>
-    #     <div style="text-align: center;">
-    #         <img src="OIP.jpg" alt="Logo" style="max-width: 100%; height: auto;">
-    #     </div>
-    #     <p>This is a custom sidebar on the right side.</p>
-    #     </div>
-    #     """,
-    #     unsafe_allow_html=True
-    # )
-
-
-
-
-    st.write("#")
-
-    st.write("# Chaînes de transformation numérique")
+    st.subheader(" Chaînes de transformation numérique")
    
     st.write("Les chaînes de transformation numérique sont utilisées pour convertir des données d'un format à un autre.")
 
