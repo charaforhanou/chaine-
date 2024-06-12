@@ -32,7 +32,7 @@ def apply_nyquist_filter(binary_data):
 
 def demodulate_signal(filtered_data):
     """Demodulate the filtered binary data to recover the original binary sequence."""
-    recovered_binary_sequence = (filtered_data > 0.5).astype(int) 
+    recovered_binary_sequence = (filtered_data > 0.5).astype(int) - (filtered_data <= 0.5).astype(int)
     return recovered_binary_sequence
 
 def main():

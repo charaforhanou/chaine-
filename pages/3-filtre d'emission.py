@@ -51,7 +51,7 @@ def filtre_nyquist(signal, Ts, sampling_rate=1000):
     roll_off = 0.25
     num_taps = 101
     nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off))
-    nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
+    nyquist_signal = lfilter(nyquist_filter, -1.0, signal)
     return nyquist_signal
 
 def calculate_dsp(signal, sampling_rate=1000):
