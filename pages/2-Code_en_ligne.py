@@ -6,7 +6,6 @@ class BinaryTransmissionApp:
     def __init__(self, master):
         self.master = master
         master.title("Binary Transmission")
-        
         self.filter_type = st.selectbox("Select filter type:", ["RZ", "NRZ", "Miller", "Manchester", "HDBN"])
         if self.filter_type == "HDBN":
             self.hdbn_order = st.number_input("HDBN Filter Order", min_value=1, step=1, value=3)
@@ -29,22 +28,15 @@ class BinaryTransmissionApp:
         else:
             return binary_sequence
 
-    # def apply_RZ(self, binary_sequence):
-    #     rz_sequence = []
-    #     for bit in binary_sequence:
-    #         if bit == 1:
-    #             rz_sequence.extend([1, 0])
-    #         else:
-    #             rz_sequence.extend([0, 0])
-    #     return rz_sequence
-    def apply_RZ(self, signal ,Ts):
-        sampling_rate = 1000
-        num_samples_per_period = int(Ts * sampling_rate / 1000)
-        nrz_signal = np.zeros(len(signal) * num_samples_per_period)
-        for i, bit in enumerate(signal):
-            value = 1 if bit == 1 else 0
-            nrz_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = value
-        return nrz_signal
+    def apply_RZ(self, binary_sequence,Ts):
+        rz_sequence = []
+        for bit in binary_sequence:
+            if bit == 1:
+                rz_sequence.extend([1, 0])
+            else:
+                rz_sequence.extend([0, 0])
+        return rz_sequence
+
     def filtre_NRZ(self, signal, Ts):
         sampling_rate = 1000
         num_samples_per_period = int(Ts * sampling_rate / 1000)
@@ -73,10 +65,9 @@ class BinaryTransmissionApp:
         for bit in binary_sequence:
             manchester_sequence.extend([1, -1] if bit == 0 else [-1, 1])
         return manchester_sequence
-
     def apply_HDBN(self, binary_sequence):
         hdbn_sequence = []
-        prev_bit = -1
+        prev_bit = 1
         for bit in binary_sequence:
             if bit == prev_bit:
                 hdbn_sequence.extend([0] * self.hdbn_order + [bit])
@@ -140,7 +131,6 @@ class BinaryTransmissionApp:
         ax[0].set_xlabel('Time (ms)')
         ax[0].set_ylabel('Amplitude')
         ax[0].set_ylim(-0.1, 1.1)
-
         # Create clock signal
         clock_period_samples = int(1000 / period_ms)  # Number of samples per clock period
         num_clock_samples = len(binary_sequence) * clock_period_samples
@@ -166,7 +156,7 @@ class BinaryTransmissionApp:
             ax[2].set_ylim(-2, 2)
         else:
             ax[2].set_ylim(-0.1, 1.1)
-
+        
         # Show plots
         st.pyplot(fig)
 
@@ -199,3 +189,4 @@ class BinaryTransmissionApp:
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 app = BinaryTransmissionApp(st)  # Pass st to the constructor
+

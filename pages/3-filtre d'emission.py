@@ -46,12 +46,17 @@ def filtre_NRZ(signal, Ts, sampling_rate=1000):
     return nrz_signal
 
 def filtre_nyquist(signal, Ts, sampling_rate=1000):
-    # Example Nyquist filter (Raised Cosine Filter)
     num_samples_per_period = int(Ts * sampling_rate / 1000)
     roll_off = 0.25
     num_taps = 101
     nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off))
-    nyquist_signal = lfilter(nyquist_filter, -1.0, signal)
+    nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
+   
+    # # Apply modulation
+    # t = np.arange(len(nyquist_signal)) / sampling_rate
+    # modulated_signal = nyquist_signal * np.cos(2 * np.pi * (1/Ts) *2500 * t)
+    
+    # return modulated_signal
     return nyquist_signal
 
 def calculate_dsp(signal, sampling_rate=1000):
@@ -59,9 +64,9 @@ def calculate_dsp(signal, sampling_rate=1000):
     return freqs, psd
 
 def plot_signals(signal, Ts, sampling_rate=1000):
-    whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
     nrz_signal = filtre_NRZ(signal, Ts, sampling_rate)
-    nyquist_signal = filtre_nyquist(nrz_signal, Ts, sampling_rate)
+    whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
+    nyquist_signal = filtre_nyquist(whitened_signal, Ts, sampling_rate)
      #nyquist_signal = filtre_nyquist(whitened_signal, Ts, sampling_rate)
 
     freqs, psd = calculate_dsp(whitened_signal, sampling_rate)
@@ -70,17 +75,18 @@ def plot_signals(signal, Ts, sampling_rate=1000):
     t = np.linspace(0, total_duration_ms / 1000, len(nyquist_signal))
 
     fig, axs = plt.subplots(3, 1, figsize=(10, 12))
-
-    axs[0].plot(t[:len(whitened_signal)], whitened_signal, label='Whitened Signal', color='red')
+  
+  
+    axs[0].plot(t[:len(nrz_signal)], nrz_signal, label='NRZ Signal', color='blue')
     axs[0].set_xlabel('Time (s)')
     axs[0].set_ylabel('Amplitude')
-    axs[0].set_title('Whitened Signal')
+    axs[0].set_title('NRZ Signal')
     axs[0].legend()
 
-    axs[1].plot(t[:len(nrz_signal)], nrz_signal, label='NRZ Signal', color='blue')
+    axs[1].plot(t[:len(whitened_signal)], whitened_signal, label='Whitened Signal', color='red')
     axs[1].set_xlabel('Time (s)')
     axs[1].set_ylabel('Amplitude')
-    axs[1].set_title('NRZ Signal')
+    axs[1].set_title('Whitened Signal')
     axs[1].legend()
 
     axs[2].plot(t, nyquist_signal, label='Nyquist Signal', color='green')
@@ -95,7 +101,7 @@ def plot_signals(signal, Ts, sampling_rate=1000):
     # Save Nyquist signal to a file
     filename = "nyquist_signal.txt"
     np.savetxt(filename, nyquist_signal, fmt='%f', header="Nyquist Signal")
-    st.markdown(f"Download Nyquist signal: [Nyquist Signal]({filename})")
+   # st.markdown(f"Download Nyquist signal: [Nyquist Signal]({filename})")
 
 st.title("Signal Filters and DSP")
 
@@ -111,4 +117,4 @@ plot_signals(signal, Ts)
 
 
 
-# with nyquist on NRZ 
+ 

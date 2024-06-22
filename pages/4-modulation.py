@@ -20,7 +20,7 @@ def plot_nyquist_signal(nyquist_signal, title="Nyquist Signal"):
 
     st.pyplot(fig)
 
-def modulate_signal(signal, modulation_type, sampling_rate=1000, f0=10):
+def modulate_signal(signal, modulation_type, sampling_rate=1000, f0=250):
     t = np.arange(len(signal)) / sampling_rate
     if modulation_type == 'ASK':
         modulated_signal = signal * np.cos(2 * np.pi * f0 * t)

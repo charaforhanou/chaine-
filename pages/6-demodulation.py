@@ -1,13 +1,35 @@
-
-
-
-import os
 import numpy as np
-import scipy.signal as signal
+from scipy.signal import firwin, lfilter, butter, filtfilt
 import streamlit as st
 import matplotlib.pyplot as plt
 
-st.set_option('deprecation.showPyplotGlobalUse', False)
+# def nyquist_filter(signal, Ts, sampling_rate=1000):
+#     num_samples_per_period = int(Ts * sampling_rate / 1000)
+#     roll_off = 0.25
+#     num_taps = 101
+    
+#     nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off))
+#     nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
+#     return nyquist_signal
+
+def modulate(signal, carrier_freq, sampling_rate):
+    t = np.arange(len(signal)) / sampling_rate
+    carrier = np.cos(2 * np.pi * carrier_freq * t)
+    modulated_signal = signal * carrier
+    return modulated_signal
+
+def demodulate(modulated_signal, carrier_freq, sampling_rate):
+    t = np.arange(len(modulated_signal)) / sampling_rate
+    carrier = np.cos(2 * np.pi * carrier_freq * t)
+    demodulated_signal = modulated_signal * carrier
+    
+    # Apply low-pass filter to recover the baseband signal
+    nyquist_rate = sampling_rate / 2
+    cutoff_freq = carrier_freq / nyquist_rate
+    b, a = butter(5, cutoff_freq)
+    recovered_signal = filtfilt(b, a, demodulated_signal)
+    return recovered_signal
+
 
 def read_signal(filename):
     """Reads the modulated signal from a file."""
@@ -16,183 +38,34 @@ def read_signal(filename):
         signal_data = np.array([float(line.strip()) for line in lines if not line.startswith("#")])
     return signal_data
 
-def apply_nrz(signal_data):
-    """Apply NRZ decoding to convert the signal to binary data."""
-    binary_data = ((signal_data > 0).astype(int) * 1) - ((signal_data <= 0).astype(int) * 1)
-
-    # binary_data = (signal_data > 0).astype(int)
-    return binary_data
-
-def apply_nyquist_filter(binary_data):
-    """Apply a Nyquist filter to the binary data."""
-    # Assuming a simple moving average filter for demonstration
-    window_size = 10  # Adjust window size as needed
-    filtered_data = np.convolve(binary_data, np.ones(window_size) / window_size, mode='same')
-    return filtered_data
-
-def demodulate_signal(filtered_data):
-    """Demodulate the filtered binary data to recover the original binary sequence."""
-    recovered_binary_sequence = (filtered_data > 0.5).astype(int) - (filtered_data <= 0.5).astype(int)
-    return recovered_binary_sequence
 
 def main():
-    st.set_page_config(
-        page_title="Binary Signal Recovery",
-        page_icon="🔍"
-    )
-
-    st.title("Binary Signal Recovery")
-
-    # Parameters
     filename = 'modulated_signal_ASK.txt'
+    st.title("Modulation and Demodulation")
+    modulated_signal = read_signal(filename)
+    # User input
+    sampling_rate = st.number_input("Sampling Rate (Hz)", min_value=1000, step=1000, value=10000)
+    Ts = st.number_input("Signal Period (s)", min_value=1.0, step=1.0, value=1.0)
+    binary_sequence_length = st.number_input("Binary Sequence Length", min_value=10, step=10, value=100)
+    carrier_freq = st.number_input("Carrier Frequency (Hz)", min_value=100, step=10, value=250)
 
-    # Read the modulated signal
-    try:
-        modulated_signal = read_signal(filename)
+    binary_sequence = np.random.choice([0, 1], size=binary_sequence_length)
+    # signal = nyquist_filter(binary_sequence, Ts, sampling_rate)
+    # modulated_signal = modulate(signal, carrier_freq, sampling_rate)
+    demodulated_signal = demodulate(modulated_signal, carrier_freq, sampling_rate)
 
-         # Apply Nyquist filter
-        filtered_data = apply_nyquist_filter(modulated_signal)
+    # Plot the signals
+    t = np.arange(len(modulated_signal)) / sampling_rate
 
-        # Apply NRZ decoding
-        binary_data = apply_nrz(filtered_data)
+    fig, ax = plt.subplots(3, 1, figsize=(12, 8))
+    ax[0].plot(t, modulated_signal, label='Nyquist Filtered Signal')
+    ax[0].legend()
+    ax[1].plot(t, modulated_signal, label='Modulated Signal')
+    ax[1].legend()
+    ax[2].plot(t, demodulated_signal, label='Demodulated Signal')
+    ax[2].legend()
 
-       
-        # Demodulate the filtered binary data
-        recovered_binary_sequence = demodulate_signal(binary_data)
-
-        # Display the results
-        st.subheader("Recovered Binary Sequence")
-        st.text(recovered_binary_sequence)
-
-        # Plot each signal separately for visualization
-        fig, axs = plt.subplots(4, 1, figsize=(10, 12))
-
-        axs[0].plot(modulated_signal)
-        axs[0].set_title('Modulated Signal')
-
-        axs[1].plot(binary_data)
-        axs[1].set_title('Binary Data (After NRZ Decoding)')
-
-        axs[2].plot(filtered_data)
-        axs[2].set_title('Filtered Data (After Nyquist Filter)')
-
-        axs[3].plot(recovered_binary_sequence)
-        axs[3].set_title('Recovered Binary Sequence')
-
-        # Adjust layout
-        plt.tight_layout()
-
-        # Show plot in Streamlit
-        st.pyplot(fig)
-
-    except Exception as e:
-        st.error(f"An error occurred while reading the file: {e}")
+    st.pyplot(fig)
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import os
-# import numpy as np
-# import scipy.signal as signal
-# import streamlit as st
-# import matplotlib.pyplot as plt
-
-# st.set_option('deprecation.showPyplotGlobalUse', False)
-
-# def read_signal(filename):
-#     """Reads the modulated signal from a file."""
-#     with open(filename, 'r') as file:
-#         lines = file.readlines()
-#         signal_data = np.array([float(line.strip()) for line in lines if not line.startswith("#")])
-#     return signal_data
-
-# def apply_nrz(signal_data):
-#     """Apply NRZ decoding to convert the signal to binary data."""
-#     binary_data = (signal_data > 0).astype(int)
-#     return binary_data
-
-# def apply_nyquist_filter(binary_data):
-#     """Apply a Nyquist filter to the binary data."""
-#     # Assuming a simple moving average filter for demonstration
-#     window_size = 10  # Adjust window size as needed
-#     filtered_data = np.convolve(binary_data, np.ones(window_size) / window_size, mode='same')
-#     return filtered_data
-
-# def demodulate_signal(filtered_data):
-#     """Demodulate the filtered binary data to recover the original binary sequence."""
-#     recovered_binary_sequence = (filtered_data > 0.5).astype(int)
-#     return recovered_binary_sequence
-
-# def main():
-#     st.set_page_config(
-#         page_title="Binary Signal Recovery",
-#         page_icon="🔍"
-#     )
-
-#     st.title("Binary Signal Recovery")
-
-#     # Parameters
-#     filename = 'modulated_signal_ASK.txt'
-
-#     # Read the modulated signal
-#     try:
-#         modulated_signal = read_signal(filename)
-
-#         # Apply NRZ decoding
-#         binary_data = apply_nrz(modulated_signal)
-
-#         # Apply Nyquist filter
-#         filtered_data = apply_nyquist_filter(binary_data)
-
-#         # Demodulate the filtered binary data
-#         recovered_binary_sequence = demodulate_signal(filtered_data)
-
-#         # Display the results
-#         st.subheader("Recovered Binary Sequence")
-#         st.text(recovered_binary_sequence)
-
-#         # Plot the signals for visualization
-#         plt.figure(figsize=(10, 6))
-#         plt.plot(modulated_signal, label='Modulated Signal')
-#         plt.plot(binary_data, label='Binary Data (After NRZ Decoding)')
-#         plt.plot(filtered_data, label='Filtered Data (After Nyquist Filter)')
-#         plt.plot(recovered_binary_sequence, label='Recovered Binary Sequence')
-#         plt.xlabel('Sample')
-#         plt.ylabel('Amplitude / Binary Value')
-#         plt.title('Signal Processing Steps')
-#         plt.legend()
-#         plt.grid(True)
-#         st.pyplot(plt)
-
-#     except Exception as e:
-#         st.error(f"An error occurred while reading the file: {e}")
-
-# if __name__ == "__main__":
-#     main()
