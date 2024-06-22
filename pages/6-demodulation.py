@@ -44,6 +44,10 @@ def read_signal(filename):
         signal_data = np.array([float(line.strip()) for line in lines if not line.startswith("#")])
     return signal_data
 
+def save_signal(signal, filename):
+    """Saves the signal data to a text file."""
+    np.savetxt(filename, signal)
+
 def main():
     st.title("Modulation and Demodulation")
     filename = 'modulated_signal_ASK.txt'
@@ -58,8 +62,12 @@ def main():
     st.write(f"Detected Carrier Frequency: {detected_carrier_freq} Hz")
     
     # Demodulate the signal using the detected carrier frequency
-    demodulated_signal = demodulate(modulated_signal, detected_carrier_freq, sampling_rate)
+    demodulated_signal = 2* demodulate(modulated_signal, detected_carrier_freq, sampling_rate)
 
+    # Save the modulated and demodulated signals
+  #  save_signal(modulated_signal, 'saved_modulated_signal.txt')
+    save_signal(demodulated_signal, 'saved_demodulated_signal.txt')
+    
     # Plot the signals
     t = np.arange(len(modulated_signal)) / sampling_rate
 
