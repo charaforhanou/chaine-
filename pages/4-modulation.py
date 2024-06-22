@@ -20,6 +20,43 @@ def plot_nyquist_signal(nyquist_signal, title="Nyquist Signal"):
 
     st.pyplot(fig)
 
+def getsignal_ts():
+    filename = "binary_sequence_and_period.txt"
+    try:
+        with open(filename, 'r') as file:
+            lines = file.readlines()[1:]  # Skip the first line (header)
+            binary_sequence = []
+            periods = []
+            for line in lines:
+                try:
+                    value, period = line.split()
+                    binary_sequence.append(int(value))
+                    periods.append(float(period))
+                except ValueError:
+                    st.warning(f"Skipping line with invalid format: {line.strip()}")
+    except Exception as e:
+        st.error(f"An error occurred while reading the file: {e}")
+        return [], 0
+
+    if len(set(periods)) == 1:
+        return binary_sequence, periods[0]  # Return the sequence and the consistent period
+    else:
+        st.error("The periods in the file are not consistent.")
+        return [], 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def modulate_signal(signal, modulation_type, sampling_rate=1000, f0=250):
     t = np.arange(len(signal)) / sampling_rate
     if modulation_type == 'ASK':
@@ -51,10 +88,11 @@ def plot_dsp(freqs, psd, title="Power Spectral Density"):
 
 def main():
     st.title("Nyquist Signal Viewer and Modulation")
+    signal, Ts = getsignal_ts()
 
     # Relative path to the Nyquist signal file
     filename = "nyquist_signal.txt"
-
+    st.write(Ts)
     try:
         nyquist_signal = np.loadtxt(filename)
         st.subheader("Nyquist Signal")
