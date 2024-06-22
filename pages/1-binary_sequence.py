@@ -10,10 +10,10 @@ class BinaryTransmissionApp:
         if 'binary_sequence' not in st.session_state:
             st.session_state.binary_sequence = ""
         if 'period_ms' not in st.session_state:
-            st.session_state.period_ms = 100
+            st.session_state.period_ms = 50
 
         self.binary_sequence_input = st.text_input("Enter binary sequence (0 and 1):", st.session_state.binary_sequence)
-        self.period_ms_input = st.number_input("Enter symbol period (ms):", value=st.session_state.period_ms, step=100, format="%d")
+        self.period_ms_input = st.number_input("Enter symbol period (ms):", value=st.session_state.period_ms, step=50, format="%d")
 
         self.generate_random_button = st.button("Generate Random Binary Sequence")
         if self.generate_random_button:
