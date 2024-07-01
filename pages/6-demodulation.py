@@ -4,6 +4,8 @@ from scipy.fftpack import fft, fftfreq
 import streamlit as st
 import matplotlib.pyplot as plt
 
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
 def modulate(signal, carrier_freq, sampling_rate):
     t = np.arange(len(signal)) / sampling_rate
     carrier = np.cos(2 * np.pi * carrier_freq * t)
@@ -48,6 +50,59 @@ def save_signal(signal, filename):
     """Saves the signal data to a text file."""
     np.savetxt(filename, signal)
 
+def plot_signal(signal, title="Signal", sampling_rate=1000):
+    total_duration_ms = len(signal) * (1000 / sampling_rate)
+    t = np.linspace(0, total_duration_ms / 1000, len(signal))
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(t, signal, label=title, color='green')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Amplitude')
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True)
+
+    st.pyplot(fig)
+
+def getsignal_ts():
+    filename = "binary_sequence_and_period.txt"
+    try:
+        with open(filename, 'r') as file:
+            lines = file.readlines()[1:]  # Skip the first line (header)
+            binary_sequence = []
+            periods = []
+            for line in lines:
+                try:
+                    value, period = line.split()
+                    binary_sequence.append(int(value))
+                    periods.append(float(period))
+                except ValueError:
+                    st.warning(f"Skipping line with invalid format: {line.strip()}")
+    except Exception as e:
+        st.error(f"An error occurred while reading the file: {e}")
+        return [], 0
+
+    if len(set(periods)) == 1:
+        return binary_sequence, periods[0]  # Return the sequence and the consistent period
+    else:
+        st.error("The periods in the file are not consistent.")
+        return [], 0
+
+def filtre_NRZ(signal, Ts, sampling_rate=1000):
+    num_samples_per_period = int(Ts * sampling_rate / 1000)
+    nrz_signal = np.zeros(len(signal) * num_samples_per_period)
+    for i, bit in enumerate(signal):
+        value = 1 if bit == 1 else -1
+        nrz_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = value
+    return nrz_signal
+
+def filtre_nyquist(signal, Ts, sampling_rate=1000):
+    num_samples_per_period = int(Ts * sampling_rate / 1000)
+    roll_off = 0.25
+    nyquist_filter = firwin(numtaps=101, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off))
+    nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
+    return nyquist_signal
+
 def main():
     st.title("Modulation and Demodulation")
     filename = 'modulated_signal_ASK.txt'
@@ -62,10 +117,9 @@ def main():
     st.write(f"Detected Carrier Frequency: {detected_carrier_freq} Hz")
     
     # Demodulate the signal using the detected carrier frequency
-    demodulated_signal = 2* demodulate(modulated_signal, detected_carrier_freq, sampling_rate)
+    demodulated_signal = demodulate(modulated_signal, detected_carrier_freq, sampling_rate)*2.5
 
-    # Save the modulated and demodulated signals
-  #  save_signal(modulated_signal, 'saved_modulated_signal.txt')
+    # Save the demodulated signal
     save_signal(demodulated_signal, 'saved_demodulated_signal.txt')
     
     # Plot the signals

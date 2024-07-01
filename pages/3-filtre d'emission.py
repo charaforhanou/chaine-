@@ -27,81 +27,77 @@ def getsignal_ts():
         st.error("The periods in the file are not consistent.")
         return [], 0
 
-def filtre_blanch(signal, Ts, sampling_rate=1000):
-    num_samples_per_period = int(Ts * sampling_rate / 1000)
-    whitened_signal = np.zeros(len(signal) * num_samples_per_period)
-    for i, bit in enumerate(signal):
-        if bit == 1:
-            whitened_signal[i * num_samples_per_period] = 1
-        else:
-             whitened_signal[i * num_samples_per_period] = -1
-    return whitened_signal
-
 def filtre_NRZ(signal, Ts, sampling_rate=1000):
     num_samples_per_period = int(Ts * sampling_rate / 1000)
-    nrz_signal = np.zeros(len(signal) * num_samples_per_period)
-    for i, bit in enumerate(signal):
-        value = 1 if bit == 1 else -1
-        nrz_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = value
+    nrz_signal = np.repeat(signal, num_samples_per_period)
     return nrz_signal
 
 def filtre_nyquist(signal, Ts, sampling_rate=1000):
     num_samples_per_period = int(Ts * sampling_rate / 1000)
     roll_off = 0.25
     num_taps = 101
-    nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off))
+    nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off), scale=True)
     nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
-   
-    # # Apply modulation
-    # t = np.arange(len(nyquist_signal)) / sampling_rate
-    # modulated_signal = nyquist_signal * np.cos(2 * np.pi * (1/Ts) *2500 * t)
-    
-    # return modulated_signal
+
+    # Normalize the Nyquist signal to ensure it fits within the expected amplitude range
+    nyquist_signal /= np.max(np.abs(nyquist_signal))
+
     return nyquist_signal
 
 def calculate_dsp(signal, sampling_rate=1000):
     freqs, psd = welch(signal, fs=sampling_rate, nperseg=1024)
     return freqs, psd
 
+def filtre_blanch(signal, Ts, sampling_rate=1000):
+    num_samples_per_period = int(Ts * sampling_rate / 1000)
+    whitened_signal = np.zeros(len(signal) * num_samples_per_period)
+    for i, bit in enumerate(signal):
+        if bit == 1:
+            whitened_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = 1
+        else:
+            whitened_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = -1
+    return whitened_signal
+
 def plot_signals(signal, Ts, sampling_rate=1000):
     nrz_signal = filtre_NRZ(signal, Ts, sampling_rate)
-    whitened_signal = filtre_blanch(signal, Ts, sampling_rate)
-    nyquist_signal = filtre_nyquist(whitened_signal, Ts, sampling_rate)
-     #nyquist_signal = filtre_nyquist(whitened_signal, Ts, sampling_rate)
+    white = filtre_blanch(signal, Ts, sampling_rate)
+    nyquist_signal = filtre_nyquist(white, Ts, sampling_rate)
 
-    freqs, psd = calculate_dsp(whitened_signal, sampling_rate)
-    
-    total_duration_ms = len(nyquist_signal) * (1000 / sampling_rate)
-    t = np.linspace(0, total_duration_ms / 1000, len(nyquist_signal))
+    freqs, psd = calculate_dsp(nyquist_signal, sampling_rate)
 
-    fig, axs = plt.subplots(3, 1, figsize=(10, 12))
-  
-  
-    axs[0].plot(t[:len(nrz_signal)], nrz_signal, label='NRZ Signal', color='blue')
-    axs[0].set_xlabel('Time (s)')
-    axs[0].set_ylabel('Amplitude')
-    axs[0].set_title('NRZ Signal')
-    axs[0].legend()
+    total_duration_ms = len(white) * (1000 / sampling_rate)
+    t = np.linspace(0, total_duration_ms / 1000, len(white))
 
-    axs[1].plot(t[:len(whitened_signal)], whitened_signal, label='Whitened Signal', color='red')
-    axs[1].set_xlabel('Time (s)')
-    axs[1].set_ylabel('Amplitude')
-    axs[1].set_title('Whitened Signal')
-    axs[1].legend()
+    # Plot the whitening filter
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(white, label='Whitened Signal', color='blue')
+    ax.set_xlabel('Samples')
+    ax.set_ylabel('Amplitude')
+    ax.set_title('Whitening Filter')
+    ax.legend()
+    st.pyplot(fig)
 
-    axs[2].plot(t, nyquist_signal, label='Nyquist Signal', color='green')
-    axs[2].set_xlabel('Time (s)')
-    axs[2].set_ylabel('Amplitude')
-    axs[2].set_title('Nyquist Signal')
-    axs[2].legend()
+    # Plot the Nyquist filter
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(nyquist_signal, label='Nyquist Signal', color='green')
+    ax.set_xlabel('Samples')
+    ax.set_ylabel('Amplitude')
+    ax.set_title('Nyquist Filter')
+    ax.legend()
+    st.pyplot(fig)
 
-    fig.tight_layout()
+    # Plot the DSP of the Nyquist signal
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(freqs, psd, label='Nyquist DSP', color='orange')
+    ax.set_xlabel('Frequency (Hz)')
+    ax.set_ylabel('Power Spectral Density (dB/Hz)')
+    ax.set_title('Nyquist Signal DSP')
+    ax.legend()
     st.pyplot(fig)
 
     # Save Nyquist signal to a file
     filename = "nyquist_signal.txt"
     np.savetxt(filename, nyquist_signal, fmt='%f', header="Nyquist Signal")
-   # st.markdown(f"Download Nyquist signal: [Nyquist Signal]({filename})")
 
 st.title("Signal Filters and DSP")
 
@@ -114,7 +110,3 @@ if not signal or not Ts:
 
 # Plot the signals and DSP
 plot_signals(signal, Ts)
-
-
-
- 

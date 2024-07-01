@@ -37,7 +37,7 @@ def main():
         plot_signal(modulated_signal, title="Original Modulated Signal")
 
         # Adjust the noise level
-        noise_level = st.slider("Noise Level", 0.0, 1.0, 0.1, 0.01)
+        noise_level = st.slider("Noise Level", 0.0, 1.0, 0.01, 0.001)
 
         # Add noise to the modulated signal with the selected noise level
         noisy_signal = add_noise(modulated_signal, noise_level=noise_level)
