@@ -35,7 +35,7 @@ def filtre_NRZ(signal, Ts, sampling_rate=1000):
 def filtre_nyquist(signal, Ts, sampling_rate=1000):
     num_samples_per_period = int(Ts * sampling_rate / 1000)
     roll_off = 0.25
-    num_taps = 101
+    num_taps = 60
     nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off), scale=True)
     nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
 
@@ -53,9 +53,9 @@ def filtre_blanch(signal, Ts, sampling_rate=1000):
     whitened_signal = np.zeros(len(signal) * num_samples_per_period)
     for i, bit in enumerate(signal):
         if bit == 1:
-            whitened_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = 1
+            whitened_signal[i * num_samples_per_period] = 1
         else:
-            whitened_signal[i * num_samples_per_period:(i + 1) * num_samples_per_period] = -1
+            whitened_signal[i * num_samples_per_period] = -1
     return whitened_signal
 
 def plot_signals(signal, Ts, sampling_rate=1000):

@@ -22,6 +22,11 @@ def demodulate(modulated_signal, carrier_freq, sampling_rate):
     cutoff_freq = carrier_freq / nyquist_rate
     b, a = butter(5, cutoff_freq)
     recovered_signal = filtfilt(b, a, demodulated_signal)
+    
+    # Normalize to ensure the recovered signal starts with positive or negative value correctly
+    if recovered_signal[0] < 0:
+        recovered_signal = -recovered_signal
+    
     return recovered_signal
 
 def detect_carrier_frequency(signal, sampling_rate):
@@ -117,7 +122,7 @@ def main():
     st.write(f"Detected Carrier Frequency: {detected_carrier_freq} Hz")
     
     # Demodulate the signal using the detected carrier frequency
-    demodulated_signal = demodulate(modulated_signal, detected_carrier_freq, sampling_rate)*2.5
+    demodulated_signal = demodulate(modulated_signal, detected_carrier_freq, sampling_rate)
 
     # Save the demodulated signal
     save_signal(demodulated_signal, 'saved_demodulated_signal.txt')
