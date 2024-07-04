@@ -122,7 +122,7 @@ def main():
 
         # Display the detected period and binary sequence
         st.write(f"Detected Period: {period:.4f} s")
-        st.write(f"Binary Sequence: {binary_sequence}")
+        st.write(f"Binary Sequence: {s}")
     else:
         st.write("Unable to detect the period of the signal.")
 
