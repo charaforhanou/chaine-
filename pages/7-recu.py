@@ -77,7 +77,7 @@ def nyquist_filter(binary_sequence, period, sampling_rate):
 def main():
     st.title("NRZ Signal Detection and Binary Sequence Extraction")
 
-    filename = st.text_input("Enter the filename for the demodulated signal", value='saved_demodulated_signal.txt')
+    filename ='saved_demodulated_signal.txt'
     sampling_rate = st.number_input("Sampling Rate (Hz)", min_value=100, step=100, value=1000)
 
     demodulated_signal = read_signal(filename)

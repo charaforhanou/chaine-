@@ -32,17 +32,27 @@ def filtre_NRZ(signal, Ts, sampling_rate=1000):
     nrz_signal = np.repeat(signal, num_samples_per_period)
     return nrz_signal
 
-def filtre_nyquist(signal, Ts, sampling_rate=1000):
-    num_samples_per_period = int(Ts * sampling_rate / 1000)
-    roll_off = 0.25
-    num_taps = 60
-    nyquist_filter = firwin(num_taps, cutoff=1.0 / num_samples_per_period, window=('kaiser', roll_off), scale=True)
-    nyquist_signal = lfilter(nyquist_filter, 1.0, signal)
+def nyquist__filter(binary_data, T_s):
+    samples_per_bit = int(1 / T_s)
+    t = np.linspace(0, len(binary_data) * T_s, len(binary_data) * samples_per_bit)
+    y = np.zeros(len(t))
+    
+    # Define a small sinusoidal wave function
+    def sinusoidal_wave(x, amplitude, frequency):
+        return amplitude * np.sin(2 * np.pi * frequency * x)
+    
+    for i, bit in enumerate(binary_data):
+        start_idx = i * samples_per_bit
+        end_idx = (i + 1) * samples_per_bit
+        t_bit = np.linspace(0, T_s, samples_per_bit)
+        frequency = 1 / (2 * T_s)  # Frequency to get a single period within one bit duration
+        
+        if bit == 1:
+            y[start_idx:end_idx] = sinusoidal_wave(t_bit, amplitude=1, frequency=frequency)
+        elif bit == 0:
+            y[start_idx:end_idx] = sinusoidal_wave(t_bit, amplitude=-1, frequency=frequency)
 
-    # Normalize the Nyquist signal to ensure it fits within the expected amplitude range
-    nyquist_signal /= np.max(np.abs(nyquist_signal))
-
-    return nyquist_signal
+    return t, y
 
 def calculate_dsp(signal, sampling_rate=1000):
     freqs, psd = welch(signal, fs=sampling_rate, nperseg=1024)
@@ -61,7 +71,7 @@ def filtre_blanch(signal, Ts, sampling_rate=1000):
 def plot_signals(signal, Ts, sampling_rate=1000):
     nrz_signal = filtre_NRZ(signal, Ts, sampling_rate)
     white = filtre_blanch(signal, Ts, sampling_rate)
-    nyquist_signal = filtre_nyquist(white, Ts, sampling_rate)
+    t_nyquist, nyquist_signal = nyquist__filter(signal, Ts / 1000.0)
 
     freqs, psd = calculate_dsp(nyquist_signal, sampling_rate)
 
@@ -70,8 +80,8 @@ def plot_signals(signal, Ts, sampling_rate=1000):
 
     # Plot the whitening filter
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(white, label='Whitened Signal', color='blue')
-    ax.set_xlabel('Samples')
+    ax.plot(t, white, label='Whitened Signal', color='blue')
+    ax.set_xlabel('Time (s)')
     ax.set_ylabel('Amplitude')
     ax.set_title('Whitening Filter')
     ax.legend()
@@ -79,8 +89,8 @@ def plot_signals(signal, Ts, sampling_rate=1000):
 
     # Plot the Nyquist filter
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(nyquist_signal, label='Nyquist Signal', color='green')
-    ax.set_xlabel('Samples')
+    ax.plot(t_nyquist, nyquist_signal, label='Nyquist Signal', color='green')
+    ax.set_xlabel('Time (s)')
     ax.set_ylabel('Amplitude')
     ax.set_title('Nyquist Filter')
     ax.legend()

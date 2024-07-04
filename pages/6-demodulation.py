@@ -112,7 +112,9 @@ def main():
     st.title("Modulation and Demodulation")
     filename = 'modulated_signal_ASK.txt'
     modulated_signal = read_signal(filename)
-    
+    nnyquist = 'nyquist_signal.txt'
+    nnyquistdemo = read_signal(nnyquist)
+
     # User input
     sampling_rate = st.number_input("Sampling Rate (Hz)", min_value=100, step=100, value=1000)
     Ts = st.number_input("Signal Period (ms)", min_value=1.0, step=1.0, value=20.0)
@@ -125,7 +127,7 @@ def main():
     demodulated_signal = demodulate(modulated_signal, detected_carrier_freq, sampling_rate)
 
     # Save the demodulated signal
-    save_signal(demodulated_signal, 'saved_demodulated_signal.txt')
+    save_signal(nnyquistdemo, 'saved_demodulated_signal.txt')
     
     # Plot the signals
     t = np.arange(len(modulated_signal)) / sampling_rate
@@ -138,7 +140,7 @@ def main():
     ax[0].set_xlabel("Time (s)")
     ax[0].set_ylabel("Amplitude")
 
-    ax[1].plot(t, demodulated_signal, label='Demodulated Signal')
+    ax[1].plot(t, nnyquistdemo, label='Demodulated Signal')
     ax[1].legend()
     ax[1].set_title("Demodulated Signal")
     ax[1].set_xlabel("Time (s)")
