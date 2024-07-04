@@ -7,9 +7,9 @@ class BinaryTransmissionApp:
         st.title("Binary Transmission")
         self.filter_type = st.selectbox("Select filter type:", ["RZ", "NRZ", "Miller", "Manchester", "HDBN"])
         if self.filter_type == "HDBN":
-            self.hdbn_order = st.number_input("HDBN Filter Order", min_value=1, step=1, value=3)
+            self.hdbn_order = st.number_input("HDBN Filter Order", min_value=1, step=1, value=4)
         else:
-            self.hdbn_order = 3
+            self.hdbn_order = 4  # Default value
 
         self.plot()
 
@@ -31,10 +31,6 @@ class BinaryTransmissionApp:
         rz_sequence = []
         for bit in binary_sequence:
             rz_sequence.append(1 if bit == 1 else 0)
-            # if bit == 1:
-            #     rz_sequence.extend([1, 0])
-            # else:
-            #     rz_sequence.extend([0, 0])
         return rz_sequence
 
     def apply_NRZ(self, binary_sequence, Ts):
@@ -65,18 +61,11 @@ class BinaryTransmissionApp:
 
     def apply_HDBN(self, binary_sequence):
         hdbn_sequence = []
-        violation_counter = 0  # To keep track of B violation count
         for bit in binary_sequence:
             if bit == 0:
-                if violation_counter == self.hdbn_order - 1:
-                    hdbn_sequence.extend([0, 0, 0, 1])  # B violation (replace 4 consecutive 0s with 0001)
-                    violation_counter = 0
-                else:
-                    hdbn_sequence.append(0)
-                    violation_counter += 1
+                hdbn_sequence.append(0)
             else:
-                hdbn_sequence.append(1)
-                violation_counter = 0
+                hdbn_sequence.extend([1, -1])
         return hdbn_sequence
 
     def plot(self):
@@ -97,31 +86,33 @@ class BinaryTransmissionApp:
 
         Ts = period_ms  # Define Ts based on the period in milliseconds
 
-        # Apply selected filter
-        filtered_sequence = self.apply_filter(binary_sequence, Ts, self.filter_type)
-
         # Create time array for binary sequence
         t = np.arange(0, len(binary_sequence) * period_ms, period_ms)
 
-        # Plot original binary sequence
-        fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+        # Plot original binary sequence alone
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.step(t, binary_sequence, where='post', label='Original Binary Sequence')
+        ax.set_title('Original Binary Sequence')
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Amplitude')
+        ax.set_ylim(-0.1, 1.1)
+        ax.legend()
+        st.pyplot(fig)
 
-        ax[0].step(t, binary_sequence, where='post')
-        ax[0].set_title('Original Binary Sequence')
-        ax[0].set_xlabel('Time (ms)')
-        ax[0].set_ylabel('Amplitude')
-        ax[0].set_ylim(-0.1, 1.1)
-        ax[0].annotate(f'Period: {period_ms:.2f} ms', xy=(0.05, 0.9), xycoords='axes fraction')
+        # Apply selected filter
+        filtered_sequence = self.apply_filter(binary_sequence, Ts, self.filter_type)
 
         # Create time array for filtered sequence
         filtered_t = np.linspace(0, len(filtered_sequence) * (Ts / 2), len(filtered_sequence))
 
         # Plot filtered sequence
-        ax[1].step(filtered_t, filtered_sequence, where='post')
-        ax[1].set_title(f'Filtered Sequence ({self.filter_type})')
-        ax[1].set_xlabel('Time (ms)')
-        ax[1].set_ylabel('Amplitude')
-
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.step(filtered_t, filtered_sequence, where='post', label=f'Filtered Sequence ({self.filter_type})')
+        ax.set_title(f'Filtered Sequence ({self.filter_type})')
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Amplitude')
+        ax.set_ylim(-1.1, 1.1)
+        ax.legend()
         st.pyplot(fig)
 
 if __name__ == "__main__":
