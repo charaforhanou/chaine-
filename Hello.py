@@ -43,6 +43,9 @@ def run():
         )
     st.write("""Ces chaînes de transmission jouent un rôle essentiel dans de nombreux domaines tels que les télécommunications,
               l'informatique, l'électronique industrielle ou encore l'internet des objets.""")
-    st.write("realiser par charaf orhanou    ")
+    col7,col8, col9, col6 = st.columns([1.5,2, 2, 1.5])
+    
+    with col6:
+        st.subheader(" charaf orhanou")
 if __name__ == "__main__":
     run()
