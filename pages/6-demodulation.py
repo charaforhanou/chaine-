@@ -116,8 +116,8 @@ def main():
     nnyquistdemo = read_signal(nnyquist)
 
     # User input
-    sampling_rate = st.number_input("Sampling Rate (Hz)", min_value=100, step=100, value=1000)
-    Ts = st.number_input("Signal Period (ms)", min_value=1.0, step=1.0, value=20.0)
+    sampling_rate = 1000
+    Ts =20.0
     
     # Detect the carrier frequency from the modulated signal
     detected_carrier_freq = detect_carrier_frequency(modulated_signal, sampling_rate)

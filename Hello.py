@@ -3,7 +3,7 @@ import streamlit as st
 
 def run():
     st.set_page_config(
-        page_title="Chaînes de transformation numérique",
+        page_title=" Chaînes de transmission  numérique ",
         page_icon="🚀"
     )
 

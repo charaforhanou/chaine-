@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 class BinaryTransmissionApp:
     def __init__(self, master):
         self.master = master
-        master.title("Binary Transmission")
+        master.title("code en ligne")
         
         self.filter_type = st.selectbox("Select filter type:", ["RZ", "NRZ", "Miller", "Manchester", "HDBN"])
         if self.filter_type == "HDBN":

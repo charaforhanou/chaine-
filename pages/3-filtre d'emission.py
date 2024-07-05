@@ -109,7 +109,7 @@ def plot_signals(signal, Ts, sampling_rate=1000):
     filename = "nyquist_signal.txt"
     np.savetxt(filename, nyquist_signal, fmt='%f', header="Nyquist Signal")
 
-st.title("Signal Filters and DSP")
+
 
 signal, Ts = getsignal_ts()
 
@@ -117,6 +117,6 @@ if not signal or not Ts:
     signal = st.text_input("Enter Binary Sequence (comma-separated)", value="1,0,1,1,0")
     Ts = st.number_input("Period of the Square Wave (ms)", min_value=1, value=100, step=1)
     signal = [int(bit) for bit in signal.split(',')]
-
+st.title("filtre d'emission")
 # Plot the signals and DSP
 plot_signals(signal, Ts)

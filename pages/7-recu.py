@@ -78,7 +78,7 @@ def main():
     st.title("NRZ Signal Detection and Binary Sequence Extraction")
 
     filename ='saved_demodulated_signal.txt'
-    sampling_rate = st.number_input("Sampling Rate (Hz)", min_value=100, step=100, value=1000)
+    sampling_rate =1000
 
     demodulated_signal = read_signal(filename)
     
