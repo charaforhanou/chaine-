@@ -32,7 +32,7 @@ def filtre_NRZ(signal, Ts, sampling_rate=1000):
     nrz_signal = np.repeat(signal, num_samples_per_period)
     return nrz_signal
 
-def nyquist__filter(binary_data, T_s):
+def nyquist_filter(binary_data, T_s):
     samples_per_bit = int(1 / T_s)
     t = np.linspace(0, len(binary_data) * T_s, len(binary_data) * samples_per_bit)
     y = np.zeros(len(t))
@@ -55,7 +55,7 @@ def nyquist__filter(binary_data, T_s):
     return t, y
 
 def calculate_dsp(signal, sampling_rate=1000):
-    freqs, psd = welch(signal, fs=sampling_rate, nperseg=1024)
+    freqs, psd = welch(signal, fs=sampling_rate, nperseg=1024, return_onesided=False)
     return freqs, psd
 
 def filtre_blanch(signal, Ts, sampling_rate=1000):
@@ -71,7 +71,7 @@ def filtre_blanch(signal, Ts, sampling_rate=1000):
 def plot_signals(signal, Ts, sampling_rate=1000):
     nrz_signal = filtre_NRZ(signal, Ts, sampling_rate)
     white = filtre_blanch(signal, Ts, sampling_rate)
-    t_nyquist, nyquist_signal = nyquist__filter(signal, Ts / 1000.0)
+    t_nyquist, nyquist_signal = nyquist_filter(signal, Ts / 1000.0)
 
     freqs, psd = calculate_dsp(nyquist_signal, sampling_rate)
 
@@ -98,7 +98,7 @@ def plot_signals(signal, Ts, sampling_rate=1000):
 
     # Plot the DSP of the Nyquist signal
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(freqs, psd, label='Nyquist DSP', color='orange')
+    ax.plot(freqs, 10 * np.log10(np.abs(psd)), label='Nyquist DSP', color='orange')
     ax.set_xlabel('Frequency (Hz)')
     ax.set_ylabel('Power Spectral Density (dB/Hz)')
     ax.set_title('Nyquist Signal DSP')
