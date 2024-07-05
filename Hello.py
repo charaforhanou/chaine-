@@ -28,7 +28,7 @@ def run():
 
     with col3:
         st.image(image2_path, use_column_width=True)
-    st.subheader(" Chaînes de transformation numérique")
+    st.subheader("Chaînes de transmission  numérique")
     st.write("Les chaînes de transmission numérique sont des systèmes complexes qui permettent de transférer des informations numériques d'un point à un autre..")
     st.markdown(
             """
