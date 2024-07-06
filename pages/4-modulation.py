@@ -137,8 +137,8 @@ def main():
 
         freqs, psd = calculate_dsp(modulated_signal)
 
-        st.subheader(f"{modulation_type} Modulated Signal Power Spectral Density")
-        plot_dsp(freqs, psd, title=f"{modulation_type} Power Spectral Density")
+        st.subheader(f"{modulation_type} ")
+        # plot_dsp(freqs, psd, title=f"{modulation_type} Power Spectral Density")
 
 if __name__ == "__main__":
     main()

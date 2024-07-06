@@ -117,7 +117,7 @@ class BinaryTransmissionApp:
 
         # Apply selected filter
         filtered_sequence = self.apply_filter(binary_sequence, self.filter_type)
-
+        
         # Create time array for binary sequence
         t = np.arange(0, len(binary_sequence) * period_ms, period_ms)
 

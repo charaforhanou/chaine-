@@ -1,8 +1,7 @@
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks, firwin, lfilter
-from scipy.fftpack import fft, fftfreq
+from scipy.signal import find_peaks
 
 def read_signal(filename):
     """Reads the signal from a file."""
@@ -15,18 +14,16 @@ def read_signal(filename):
 
 def detect_period(demodulated_signal, sampling_rate):
     """Detects the period of the NRZ signal from the demodulated signal."""
-    # Find peaks which correspond to the bit transitions
     peaks, _ = find_peaks(np.abs(demodulated_signal), height=np.max(np.abs(demodulated_signal)) * 0.5)
-    
-    # Calculate the period between peaks
     if len(peaks) > 1:
         periods = np.diff(peaks) / sampling_rate
         average_period = np.mean(periods)
     else:
         average_period = None
     return average_period, peaks
-def getsi_ts():
-    filename = "binary_sequence_and_period.txt"
+
+def read_binary_sequence_and_period(filename):
+    """Reads binary sequence and period from a file."""
     try:
         with open(filename, 'r') as file:
             lines = file.readlines()[1:]  # Skip the first line (header)
@@ -48,6 +45,7 @@ def getsi_ts():
     else:
         st.error("The periods in the file are not consistent.")
         return [], 0
+
 def extract_binary_sequence(demodulated_signal, period, sampling_rate):
     """Extracts the binary sequence from the demodulated signal based on the detected period."""
     binary_sequence = []
@@ -66,10 +64,8 @@ def nyquist_filter(binary_sequence, period, sampling_rate):
 
     for i, bit in enumerate(binary_sequence):
         if bit == 1:
-            # Positive value for NRZ
             nyquist_signal[i * int(sampling_rate * period):(i + 1) * int(sampling_rate * period)] = 1
         else:
-            # Negative value for NRZ
             nyquist_signal[i * int(sampling_rate * period):(i + 1) * int(sampling_rate * period)] = -1
 
     return nyquist_signal
@@ -77,8 +73,8 @@ def nyquist_filter(binary_sequence, period, sampling_rate):
 def main():
     st.title("NRZ Signal Detection and Binary Sequence Extraction")
 
-    filename ='saved_demodulated_signal.txt'
-    sampling_rate =1000
+    filename = 'saved_demodulated_signal.txt'
+    sampling_rate = st.number_input("Sampling Rate (Hz)", min_value=100, step=100, value=1000)
 
     demodulated_signal = read_signal(filename)
     
@@ -96,35 +92,43 @@ def main():
     ax.legend()
     st.pyplot(fig)
     
-    s , period = getsi_ts()
-    # Detect the period of the NRZ signal
-    peri0d, peaks = detect_period(demodulated_signal, sampling_rate)
+    binary_sequence, period = read_binary_sequence_and_period("binary_sequence_and_period.txt")
+    detected_period, peaks = detect_period(demodulated_signal, sampling_rate)
 
-    period =period*0.001
-
-
-    if period is not None:
-        # Extract the binary sequence from the NRZ signal
-        binary_sequence = extract_binary_sequence(demodulated_signal, period, sampling_rate)
-
-        # Apply Nyquist filter based on binary sequence
-        nyquist_signal = nyquist_filter(binary_sequence, period, sampling_rate)
-
-        # Plot the Nyquist filtered signal
-        t_nyquist = np.arange(len(nyquist_signal)) / sampling_rate
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(t_nyquist, nyquist_signal, label='NRZ Signal')
-        ax.set_title("NRZ Signal")
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Amplitude")
-        ax.legend()
-        st.pyplot(fig)
-
-        # Display the detected period and binary sequence
-        st.write(f"Detected Period: {period:.4f} s")
-        st.write(f"Binary Sequence: {s}")
+    if detected_period is not None:
+        st.write(f"Detected Period: {detected_period:.4f} s")
     else:
         st.write("Unable to detect the period of the signal.")
+        return
+
+    # Apply Nyquist filter based on binary sequence
+    nyquist_signal = nyquist_filter(binary_sequence, period, sampling_rate)
+    
+    # Generate time vector for Nyquist signal
+    t_nyquist = np.arange(0, len(nyquist_signal)) / sampling_rate
+
+    # Plot the NRZ signal
+    nrz_signal = read_signal("nrz_signal.txt")
+    t_nrz = np.arange(len(nrz_signal)) / sampling_rate
+    # fig, ax = plt.subplots(figsize=(12, 6))
+    # ax.plot(t_nrz, nrz_signal, label='NRZ Signal')
+    # ax.set_title("NRZ Signal")
+    # ax.set_xlabel("Time (s)")
+    # ax.set_ylabel("Amplitude")
+    # ax.legend()
+    # st.pyplot(fig)
+
+    # Plot the Nyquist filtered signal
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(t_nyquist, nyquist_signal, label='Nyquist Filtered Signal')
+    ax.set_title("Nyquist Filtered Signal")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    ax.legend()
+    st.pyplot(fig)
+
+    # Display the binary sequence
+    st.write(f"Binary Sequence: {binary_sequence}")
 
 if __name__ == "__main__":
     main()
